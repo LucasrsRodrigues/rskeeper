@@ -16,15 +16,12 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # Xcode fixado em .xcode-version (27.0). Ajustar o caminho se o runner usar outro nome.
-  DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
-
 jobs:
   toolchain:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+      - run: scripts/ci/select-xcode.sh   # Xcode de .xcode-version → DEVELOPER_DIR
       - run: scripts/check-toolchain.sh
 
   hygiene:
@@ -32,6 +29,7 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+      - run: scripts/ci/select-xcode.sh   # Xcode de .xcode-version → DEVELOPER_DIR
       - run: scripts/ci/hygiene.sh
 
   test-kit:
@@ -39,6 +37,7 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+      - run: scripts/ci/select-xcode.sh   # Xcode de .xcode-version → DEVELOPER_DIR
       - run: scripts/ci/test-kit.sh
 
   boundaries:
@@ -46,6 +45,7 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+      - run: scripts/ci/select-xcode.sh   # Xcode de .xcode-version → DEVELOPER_DIR
       - run: scripts/check-boundaries.sh
       - run: scripts/ci/negative-checks.sh   # cada check reprova uma violação proposital
 
@@ -59,6 +59,7 @@ jobs:
         sandbox: ["YES", "NO"]   # R-W0-05: as duas variantes até a decisão final
     steps:
       - uses: actions/checkout@v4
+      - run: scripts/ci/select-xcode.sh   # Xcode de .xcode-version → DEVELOPER_DIR
       - run: scripts/ci/build.sh ${{ matrix.configuration }} ${{ matrix.sandbox }}
 
   test-app:
@@ -70,6 +71,7 @@ jobs:
         sandbox: ["YES", "NO"]
     steps:
       - uses: actions/checkout@v4
+      - run: scripts/ci/select-xcode.sh   # Xcode de .xcode-version → DEVELOPER_DIR
       - run: scripts/ci/test-app.sh ${{ matrix.sandbox }}
       - run: scripts/ci/fs-footprint.sh ${{ matrix.sandbox }}
 
@@ -78,6 +80,7 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+      - run: scripts/ci/select-xcode.sh   # Xcode de .xcode-version → DEVELOPER_DIR
       - run: scripts/license-audit.sh
 
   artifact:
@@ -85,6 +88,7 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+      - run: scripts/ci/select-xcode.sh   # Xcode de .xcode-version → DEVELOPER_DIR
       - run: scripts/ci/build.sh Release YES && scripts/ci/package-adhoc.sh YES
       - run: scripts/ci/log-privacy.sh YES
       - uses: actions/upload-artifact@v4

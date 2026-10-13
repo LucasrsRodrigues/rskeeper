@@ -42,11 +42,13 @@ command -v xcodebuild > /dev/null 2>&1 || fail "xcodebuild não encontrado (inst
 command -v swift > /dev/null 2>&1 || fail "swift não encontrado (instale o Xcode $expected_xcode)" 2
 
 # "Xcode 27.0" -> "27.0"
-actual_xcode="$(xcodebuild -version 2>/dev/null | sed -n 's/^Xcode \([0-9][0-9.]*\).*/\1/p' | head -n 1)"
-[ -n "$actual_xcode" ] || fail "não foi possível ler a versão do Xcode (xcodebuild -version)" 2
+# `|| true`: com pipefail, um xcodebuild quebrado (DEVELOPER_DIR inválido) abortaria o script
+# sem mensagem; assim cai no `fail` abaixo, que explica o erro.
+actual_xcode="$( { xcodebuild -version 2>/dev/null || true; } | sed -n 's/^Xcode \([0-9][0-9.]*\).*/\1/p' | head -n 1)"
+[ -n "$actual_xcode" ] || fail "não foi possível ler a versão do Xcode (xcodebuild -version; DEVELOPER_DIR=${DEVELOPER_DIR:-<não definido>})" 2
 
 # "... Apple Swift version 6.4 (swiftlang-...)" -> "6.4"
-actual_swift_full="$(swift --version 2>&1 | sed -n 's/.*Swift version \([0-9][0-9.]*\).*/\1/p' | head -n 1)"
+actual_swift_full="$( { swift --version 2>&1 || true; } | sed -n 's/.*Swift version \([0-9][0-9.]*\).*/\1/p' | head -n 1)"
 [ -n "$actual_swift_full" ] || fail "não foi possível ler a versão do Swift (swift --version)" 2
 actual_swift="$(echo "$actual_swift_full" | cut -d. -f1-2)"
 expected_swift_mm="$(echo "$expected_swift" | cut -d. -f1-2)"
