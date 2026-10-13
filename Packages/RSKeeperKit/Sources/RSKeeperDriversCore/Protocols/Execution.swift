@@ -135,8 +135,13 @@ public protocol CancelHandle: Sendable {
 ///
 /// Decisão W0-D07: a conexão é uma referência `Sendable` (actor ou classe isolada); a **posse exclusiva**
 /// é expressa pelo `ConnectionLease` não copiável (docs/native/03 §11), não pelo protocolo.
-public protocol PhysicalConnection: AnyObject, Sendable {
+///
+/// NST-04-01: a conexão também responde metadados (a sessão dedica uma conexão a isso; SPK-N05).
+public protocol PhysicalConnection: AnyObject, MetadataProvider {
     var serverVersion: String { get }
+    /// Leitura incremental com limites impostos **durante** a leitura (invariante 1 do doc 04 §2.3).
+    func stream(_ statement: BoundStatement, limits: ReadLimits, batchSize: Int) -> ResultStream
+    /// Tem implementação padrão que consome `stream` (Streaming.swift).
     func execute(_ statement: BoundStatement, limits: ReadLimits) async throws(DriverError) -> StatementOutcome
     func transactionState() async -> TransactionState
     func resetSession() async throws(DriverError)

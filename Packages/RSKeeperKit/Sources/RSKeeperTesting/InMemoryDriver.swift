@@ -7,13 +7,25 @@ import RSKeeperDriversCore
 public struct InMemoryDriver: DriverFactory {
     public struct Script: Sendable {
         public var responses: [String: StatementOutcome]
+        /// Resultados gerados sob demanda (sem materializar), para testes de truncamento (NT-DRV-10).
+        public var generated: [String: RowGenerator]
+        /// Erros por SQL exato (NT-DRV-20).
+        public var failures: [String: DriverError]
+        public var catalog: InMemoryCatalog
+        /// Atraso por SQL exato (consulta "longa" cancelável); senão vale `delay`.
+        public var slow: [String: Duration]
         public var delay: Duration
         public var openDelay: Duration
         public var failOpen: DriverError?
 
-        public init(responses: [String: StatementOutcome] = [:], delay: Duration = .zero,
-                    openDelay: Duration = .zero, failOpen: DriverError? = nil) {
+        public init(responses: [String: StatementOutcome] = [:], generated: [String: RowGenerator] = [:],
+                    failures: [String: DriverError] = [:], catalog: InMemoryCatalog = InMemoryCatalog(),
+                    slow: [String: Duration] = [:], delay: Duration = .zero, openDelay: Duration = .zero, failOpen: DriverError? = nil) {
             self.responses = responses
+            self.generated = generated
+            self.failures = failures
+            self.catalog = catalog
+            self.slow = slow
             self.delay = delay
             self.openDelay = openDelay
             self.failOpen = failOpen
@@ -43,6 +55,33 @@ public struct InMemoryDriver: DriverFactory {
         let connection = InMemoryConnection(number: number, script: script, log: log)
         await log.record(.opened(number))
         return connection
+    }
+}
+
+/// Gerador de linhas: `rowCount` linhas calculadas por `(linha, coluna)`.
+public struct RowGenerator: Sendable {
+    public let columns: [ResultColumn]
+    public let rowCount: Int
+    public let cell: @Sendable (Int, Int) -> CellValue
+    public init(columns: [ResultColumn], rowCount: Int, cell: @escaping @Sendable (Int, Int) -> CellValue) {
+        self.columns = columns
+        self.rowCount = rowCount
+        self.cell = cell
+    }
+}
+
+/// Catálogo fixo de metadados do driver em memória.
+public struct InMemoryCatalog: Sendable {
+    public var databases: [String]
+    public var schemas: [String: [String]]
+    public var entities: [SchemaRef: [EntityInfo]]
+    public var columns: [EntityRef: [ColumnInfo]]
+    public init(databases: [String] = ["memoria"], schemas: [String: [String]] = ["memoria": ["public"]],
+                entities: [SchemaRef: [EntityInfo]] = [:], columns: [EntityRef: [ColumnInfo]] = [:]) {
+        self.databases = databases
+        self.schemas = schemas
+        self.entities = entities
+        self.columns = columns
     }
 }
 
@@ -83,7 +122,10 @@ public actor InMemoryConnection: PhysicalConnection {
         guard !closed else { throw .connection(RedactedMessage(alreadyRedacted: "Conexão fechada.")) }
         guard current == nil else { throw .busy }
         let sql = statement.sql
-        let delay = script.delay
+        if script.generated[sql] != nil || script.failures[sql] != nil {
+            return try await StatementOutcome.collect(stream(statement, limits: limits, batchSize: limits.maxRows))
+        }
+        let delay = script.slow[sql] ?? script.delay
         let response = script.responses[sql] ?? .command("OK")
         let task = Task<StatementOutcome, any Error> {
             try await Task.sleep(for: delay)
@@ -115,6 +157,92 @@ public actor InMemoryConnection: PhysicalConnection {
         guard case .rows(let columns, let batch, _, let rowCount) = outcome, rowCount > limits.maxRows else { return outcome }
         let trimmed = RowBatch(columns: batch.columns.map { Array($0.prefix(limits.maxRows)) })
         return .rows(columns: columns, firstBatch: trimmed, truncated: .maxRows(limits.maxRows), rowCount: limits.maxRows)
+    }
+
+    // MARK: Stream (NST-04-01)
+
+    public nonisolated func stream(_ statement: BoundStatement, limits: ReadLimits, batchSize: Int) -> ResultStream {
+        let (stream, continuation) = ResultStream.makeStream()
+        let task = Task { await self.produce(statement, limits: limits, batchSize: batchSize, into: continuation) }
+        continuation.onTermination = { _ in task.cancel() }
+        return stream
+    }
+
+    private func produce(_ statement: BoundStatement, limits: ReadLimits, batchSize: Int,
+                         into continuation: ResultStream.Continuation) async {
+        guard !closed else { return continuation.finish(throwing: DriverError.connection(RedactedMessage(alreadyRedacted: "Conexão fechada."))) }
+        let sql = statement.sql
+        if let failure = script.failures[sql] {
+            await log.record(.executed(sql))
+            return continuation.finish(throwing: failure)
+        }
+        do {
+            try await Task.sleep(for: script.slow[sql] ?? script.delay)
+        } catch {
+            await log.record(.cancelled(sql))
+            return continuation.finish(throwing: DriverError.cancelled)
+        }
+        if let generator = script.generated[sql] {
+            continuation.yield(.columns(generator.columns))
+            var accumulator = BatchAccumulator(columnCount: generator.columns.count, limits: limits, batchSize: batchSize)
+            var row = 0
+            while row < generator.rowCount {
+                if Task.isCancelled {
+                    await log.record(.cancelled(sql))
+                    return continuation.finish(throwing: DriverError.cancelled)
+                }
+                let values = (0..<generator.columns.count).map { generator.cell(row, $0) }
+                if accumulator.append(values) == .stop { break }
+                if accumulator.readyBatch, let batch = accumulator.takeBatch() {
+                    continuation.yield(.batch(batch))
+                    await Task.yield()
+                }
+                row += 1
+            }
+            if let batch = accumulator.takeBatch() { continuation.yield(.batch(batch)) }
+            continuation.yield(.end(accumulator.end))
+            await log.record(.executed(sql))
+            return continuation.finish()
+        }
+        switch script.responses[sql] ?? .command("OK") {
+        case .rows(let columns, let batch, _, _):
+            continuation.yield(.columns(columns))
+            var accumulator = BatchAccumulator(columnCount: columns.count, limits: limits, batchSize: batchSize)
+            for row in 0..<batch.rowCount {
+                if accumulator.append(batch.columns.map { $0[row] }) == .stop { break }
+                if accumulator.readyBatch, let ready = accumulator.takeBatch() { continuation.yield(.batch(ready)) }
+            }
+            if let ready = accumulator.takeBatch() { continuation.yield(.batch(ready)) }
+            continuation.yield(.end(accumulator.end))
+        case .affected(let count):
+            continuation.yield(.end(.affected(count)))
+        case .command(let tag):
+            switch sql.uppercased() {
+            case "BEGIN": inTransaction = true
+            case "COMMIT", "ROLLBACK": inTransaction = false
+            default: break
+            }
+            continuation.yield(.end(.command(tag)))
+        }
+        await log.record(.executed(sql))
+        continuation.finish()
+    }
+
+    // MARK: Metadados (NST-04-01)
+
+    public func databases() async throws(DriverError) -> [DatabaseInfo] { script.catalog.databases.map(DatabaseInfo.init) }
+
+    public func schemas(in database: String) async throws(DriverError) -> [SchemaInfo] {
+        (script.catalog.schemas[database] ?? []).map { SchemaInfo(ref: SchemaRef(database: database, name: $0)) }
+    }
+
+    public func entities(in schema: SchemaRef) async throws(DriverError) -> [EntityInfo] { script.catalog.entities[schema] ?? [] }
+
+    public func columns(of entity: EntityRef) async throws(DriverError) -> [ColumnInfo] {
+        guard let columns = script.catalog.columns[entity] else {
+            throw .validation(RedactedMessage(alreadyRedacted: "Entidade inexistente."))
+        }
+        return columns
     }
 
     public func transactionState() async -> TransactionState { inTransaction ? .inTransaction : .idle }

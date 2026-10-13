@@ -16,6 +16,9 @@ public enum CancelMode: String, Hashable, Sendable {
     public var discardsTransaction: Bool { self == .killSession }
 }
 
+/// Completude da introspecção de metadados (Fase 4.2, EXT-04/05).
+public enum IntrospectionLevel: String, Hashable, Sendable { case basic, full }
+
 public enum StreamingMode: String, Hashable, Sendable { case cursor, rowCallback, none }
 
 public enum ReadOnlyEnforcement: String, Hashable, Sendable { case connectionOpen, perTransaction, sessionBestEffort }
@@ -44,12 +47,20 @@ public struct DriverCapabilities: Hashable, Sendable {
     public var routines: Bool
     public var triggers: Bool
     public var partitions: Bool
+    /// Fase 4.2 (EXT-03/09/04-05): só a **declaração** entra na NST-04-01; as implementações vêm
+    /// nas NST-17-01, 22-01 e 18-01.
+    public var explain: Bool
+    public var explainAnalyze: Bool
+    public var health: Bool
+    public var introspection: IntrospectionLevel
 
     public init(cancel: CancelMode, transactions: Bool = true, savepoints: Bool = true, transactionalDDL: Bool = true,
                 schemas: Bool = true, changeDatabaseInSession: Bool = false, ilike: Bool = false, returning: Bool = false,
                 streaming: StreamingMode = .cursor, readOnly: ReadOnlyEnforcement = .perTransaction, tls: Bool = false,
                 ssh: Bool = false, statementTimeout: TimeoutMode = .clientDeadlineOnly, materializedViews: Bool = false,
-                routines: Bool = false, triggers: Bool = false, partitions: Bool = false) {
+                routines: Bool = false, triggers: Bool = false, partitions: Bool = false,
+                explain: Bool = false, explainAnalyze: Bool = false, health: Bool = false,
+                introspection: IntrospectionLevel = .basic) {
         self.cancel = cancel
         self.transactions = transactions
         self.savepoints = savepoints
@@ -67,6 +78,21 @@ public struct DriverCapabilities: Hashable, Sendable {
         self.routines = routines
         self.triggers = triggers
         self.partitions = partitions
+        self.explain = explain
+        self.explainAnalyze = explainAnalyze
+        self.health = health
+        self.introspection = introspection
+    }
+
+    /// Coerência da declaração (NT-DRV, NST-04-01 Fase 4.2): `explainAnalyze` exige `explain`;
+    /// `.interrupt` só para drivers de arquivo; `.killSession` descarta a transação.
+    public func inconsistencies(for targetKind: TargetKind) -> [String] {
+        var problems: [String] = []
+        if explainAnalyze && !explain { problems.append("explainAnalyze sem explain") }
+        if savepoints && !transactions { problems.append("savepoints sem transactions") }
+        if cancel == .interrupt && targetKind != .file { problems.append("cancel .interrupt em driver de servidor") }
+        if ssh && targetKind == .file { problems.append("ssh em driver de arquivo") }
+        return problems
     }
 }
 
