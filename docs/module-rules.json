@@ -1,0 +1,110 @@
+{
+  "comment": "Regras de fronteira entre módulos (W0-T09). Fonte: docs/native/02 e README §4/§15.4 do blueprint. 'declaredDependencies' = dependências exatas no Package.swift; 'allowedImports' = módulos RSKeeper importáveis no código; 'forbiddenImports' = módulos externos/sistema proibidos. Entradas 'prospective' ainda não existem como alvo e só são verificadas quando existirem.",
+  "externalForbiddenEverywhere": ["Electron"],
+  "modules": {
+    "RSKeeperDomain": {
+      "declaredDependencies": [],
+      "allowedImports": [],
+      "forbiddenImports": ["SwiftUI", "AppKit", "Cocoa", "UIKit", "Combine", "GRDB", "PostgresNIO", "MySQLNIO", "NIOCore", "NIOPosix", "NIOSSL", "NIOSSH", "Citadel", "Security", "OSLog", "os"]
+    },
+    "RSKeeperSQLKit": {
+      "declaredDependencies": ["RSKeeperDomain"],
+      "allowedImports": ["RSKeeperDomain"],
+      "forbiddenImports": ["SwiftUI", "AppKit", "Cocoa", "GRDB", "PostgresNIO", "MySQLNIO", "NIOCore", "NIOPosix", "Security"]
+    },
+    "RSKeeperSecurity": {
+      "declaredDependencies": ["RSKeeperDomain"],
+      "allowedImports": ["RSKeeperDomain"],
+      "forbiddenImports": ["SwiftUI", "GRDB", "PostgresNIO", "MySQLNIO", "NIOCore"]
+    },
+    "RSKeeperPersistence": {
+      "declaredDependencies": ["RSKeeperDomain", "RSKeeperSecurity"],
+      "allowedImports": ["RSKeeperDomain", "RSKeeperSecurity"],
+      "forbiddenImports": ["SwiftUI", "AppKit", "Cocoa", "PostgresNIO", "MySQLNIO", "NIOCore"],
+      "externalDependencies": ["GRDB"]
+    },
+    "RSKeeperDriversCore": {
+      "declaredDependencies": ["RSKeeperDomain", "RSKeeperSQLKit"],
+      "allowedImports": ["RSKeeperDomain", "RSKeeperSQLKit"],
+      "forbiddenImports": ["SwiftUI", "AppKit", "Cocoa", "GRDB", "PostgresNIO", "MySQLNIO"]
+    },
+    "RSKeeperApplication": {
+      "declaredDependencies": ["RSKeeperDomain", "RSKeeperSQLKit", "RSKeeperDriversCore", "RSKeeperPersistence", "RSKeeperSecurity"],
+      "allowedImports": ["RSKeeperDomain", "RSKeeperSQLKit", "RSKeeperDriversCore", "RSKeeperPersistence", "RSKeeperSecurity"],
+      "forbiddenImports": ["SwiftUI", "AppKit", "Cocoa", "GRDB", "PostgresNIO", "MySQLNIO", "NIOCore", "RSKeeperDriverSQLite", "RSKeeperDriverPostgreSQL", "RSKeeperDriverMySQL"],
+      "comment": "Observation é permitido (estado @Observable); SwiftUI/AppKit não."
+    },
+    "RSKeeperDesignSystem": {
+      "declaredDependencies": [],
+      "allowedImports": [],
+      "forbiddenImports": ["GRDB", "PostgresNIO", "MySQLNIO", "NIOCore", "Security"]
+    },
+    "RSKeeperSQLEditor": {
+      "declaredDependencies": ["RSKeeperDesignSystem", "RSKeeperSQLKit"],
+      "allowedImports": ["RSKeeperDesignSystem", "RSKeeperSQLKit"],
+      "forbiddenImports": ["GRDB", "PostgresNIO", "MySQLNIO", "NIOCore", "Security"]
+    },
+    "RSKeeperDataGrid": {
+      "declaredDependencies": ["RSKeeperDesignSystem", "RSKeeperDomain"],
+      "allowedImports": ["RSKeeperDesignSystem", "RSKeeperDomain"],
+      "forbiddenImports": ["GRDB", "PostgresNIO", "MySQLNIO", "NIOCore", "Security"]
+    },
+    "RSKeeperFeatures": {
+      "declaredDependencies": ["RSKeeperApplication", "RSKeeperDesignSystem", "RSKeeperSQLEditor", "RSKeeperDataGrid"],
+      "allowedImports": ["RSKeeperApplication", "RSKeeperDesignSystem", "RSKeeperSQLEditor", "RSKeeperDataGrid", "RSKeeperDomain"],
+      "forbiddenImports": ["GRDB", "PostgresNIO", "MySQLNIO", "NIOCore", "NIOSSL", "NIOSSH", "Citadel", "Security", "RSKeeperSecurity", "RSKeeperPersistence", "RSKeeperDriversCore", "RSKeeperDriverSQLite", "RSKeeperDriverPostgreSQL", "RSKeeperDriverMySQL"],
+      "comment": "Features nunca importa drivers, GRDB nem Security (README §4). Acesso a arquivos passa pela Application."
+    },
+    "RSKeeperTesting": {
+      "declaredDependencies": ["RSKeeperDomain", "RSKeeperDriversCore", "RSKeeperApplication", "RSKeeperPersistence"],
+      "allowedImports": ["RSKeeperDomain", "RSKeeperSQLKit", "RSKeeperDriversCore", "RSKeeperApplication", "RSKeeperPersistence", "RSKeeperSecurity"],
+      "forbiddenImports": ["SwiftUI", "AppKit"],
+      "testOnly": true
+    },
+    "RSKeeperDriverSQLite": {
+      "prospective": true,
+      "declaredDependencies": ["RSKeeperDriversCore"],
+      "allowedImports": ["RSKeeperDomain", "RSKeeperSQLKit", "RSKeeperDriversCore"],
+      "forbiddenImports": ["SwiftUI", "AppKit", "RSKeeperApplication", "RSKeeperFeatures", "RSKeeperPersistence"],
+      "externalDependencies": ["GRDB"]
+    },
+    "RSKeeperDriverPostgreSQL": {
+      "prospective": true,
+      "declaredDependencies": ["RSKeeperDriversCore"],
+      "allowedImports": ["RSKeeperDomain", "RSKeeperSQLKit", "RSKeeperDriversCore"],
+      "forbiddenImports": ["SwiftUI", "AppKit", "GRDB", "RSKeeperApplication", "RSKeeperFeatures", "RSKeeperPersistence"],
+      "externalDependencies": ["PostgresNIO"]
+    },
+    "RSKeeperDriverMySQL": {
+      "prospective": true,
+      "declaredDependencies": ["RSKeeperDriversCore"],
+      "allowedImports": ["RSKeeperDomain", "RSKeeperSQLKit", "RSKeeperDriversCore"],
+      "forbiddenImports": ["SwiftUI", "AppKit", "GRDB", "RSKeeperApplication", "RSKeeperFeatures", "RSKeeperPersistence"],
+      "externalDependencies": ["MySQLNIO"]
+    },
+    "RSKeeperAnalysis": {
+      "prospective": true,
+      "declaredDependencies": ["RSKeeperDomain", "RSKeeperSQLKit", "RSKeeperDriversCore"],
+      "allowedImports": ["RSKeeperDomain", "RSKeeperSQLKit", "RSKeeperDriversCore"],
+      "forbiddenImports": ["SwiftUI", "AppKit", "RSKeeperApplication", "RSKeeperPersistence", "RSKeeperSecurity", "GRDB", "PostgresNIO", "MySQLNIO"]
+    },
+    "RSKeeperDataTools": {
+      "prospective": true,
+      "declaredDependencies": ["RSKeeperDomain", "RSKeeperSecurity"],
+      "allowedImports": ["RSKeeperDomain", "RSKeeperSecurity"],
+      "forbiddenImports": ["SwiftUI", "AppKit", "RSKeeperApplication", "RSKeeperPersistence", "RSKeeperDriversCore", "GRDB", "PostgresNIO", "MySQLNIO"]
+    },
+    "RSKeeperERDiagram": {
+      "prospective": true,
+      "declaredDependencies": ["RSKeeperDesignSystem", "RSKeeperDomain"],
+      "allowedImports": ["RSKeeperDesignSystem", "RSKeeperDomain"],
+      "forbiddenImports": ["GRDB", "PostgresNIO", "MySQLNIO", "RSKeeperApplication", "RSKeeperPersistence", "RSKeeperSecurity"]
+    },
+    "RSKeeperAssist": {
+      "prospective": true,
+      "declaredDependencies": ["RSKeeperDomain", "RSKeeperAnalysis"],
+      "allowedImports": ["RSKeeperDomain", "RSKeeperAnalysis"],
+      "forbiddenImports": ["RSKeeperDriversCore", "RSKeeperSecurity", "RSKeeperPersistence", "RSKeeperApplication", "GRDB", "PostgresNIO", "MySQLNIO"]
+    }
+  }
+}

@@ -154,6 +154,11 @@ let package = Package(
             name: "RSKeeperFeaturesTests",
             dependencies: ["RSKeeperFeatures"]
         ),
+        // Testes de arquitetura (fronteiras de módulo, regras de migração). Leem arquivos
+        // do repositório; não dependem de nenhum módulo de produção.
+        .testTarget(
+            name: "ArchitectureTests"
+        ),
     ],
     swiftLanguageModes: [.v6]
 )
