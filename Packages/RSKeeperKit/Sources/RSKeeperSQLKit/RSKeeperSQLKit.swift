@@ -5,8 +5,8 @@
 // - funções puras e tipos `Sendable`; sem I/O;
 // - não importa SwiftUI, AppKit nem drivers.
 //
-// Lexer, divisor, classificador de risco, parâmetros, quoting e parser de URL
-// entram em histórias futuras (NST-04-05 e relacionadas). Este arquivo é o marcador.
+// NST-04-05 (W1-T01): Lexer/, Splitter/, Classifier/, Parameters/ e URL/.
+// Quoting de identificadores fica com o `Dialect` de cada driver.
 
 import RSKeeperDomain
 

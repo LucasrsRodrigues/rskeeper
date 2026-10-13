@@ -77,6 +77,10 @@ O app (`App/`) não entra nessa medição; ele é coberto pelos XCUITests.
 | P-07 | Limpeza manual do SPK-N07: dois containers vazios `app.rskeeper.spike.n07.sandbox*` (o `rm` não remove containers) | Nenhum | O usuário arrasta-os ao Lixo |
 | P-08 | `LICENSE` é placeholder; D-N3 (bundle IDs) e D-N5 (marca) estão pendentes | Bloqueia publicação, não desenvolvimento | Decisão do responsável |
 
+### Correção posterior (2026-10-13)
+
+O primeiro run limpo no runner próprio mostrou 4 avisos de isolamento de ator em `ComponentTests.swift` (W0-T26/T27), que **não** apareceram na coleta `20261013-192116` porque o build do pacote era incremental. Assim, o item 1 ("zero avisos") estava correto para os builds do app, mas não para o test-kit. Correção no commit da W1-T01: suíte marcada `@MainActor`, test-kit limpo sem avisos. O CI roda sempre de árvore limpa.
+
 ## 4. Preparação da onda 1
 
 Desbloqueadas:

@@ -49,6 +49,7 @@ private struct PatternsView: View {
 }
 
 @Suite("Componentes básicos (W0-T26/T27)")
+@MainActor
 struct ComponentLogicTests {
     @Test("Rótulo dinâmico do botão de execução [CONFIRMADO CAP-04/08]")
     func runModeLabel() {
