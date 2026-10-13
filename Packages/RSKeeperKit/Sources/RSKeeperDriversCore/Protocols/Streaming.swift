@@ -67,6 +67,8 @@ extension StatementOutcome {
         } catch {
             throw DriverError.normalized(error)
         }
+        // Cancelar a Task consumidora encerra a iteração sem erro: isso é cancelamento, não falha do driver.
+        if Task.isCancelled { throw .cancelled }
         throw .driver(code: "stream-ended", RedactedMessage(alreadyRedacted: "O stream terminou sem evento final."))
     }
 }
@@ -87,6 +89,23 @@ extension CellValue {
         case .unsupported(let name): name.utf8.count
         case .array(let values): values.reduce(0) { $0 + $1.estimatedByteCount }
         }
+    }
+}
+
+extension CellValue {
+    /// Texto limitado a `limit` bytes UTF-8, sem cortar um caractere ao meio; acima disso, `.truncated`.
+    public static func text(_ string: String, limit: Int) -> CellValue {
+        let size = string.utf8.count
+        guard size > limit else { return .text(string) }
+        var prefix = ""
+        var used = 0
+        for character in string {
+            let length = character.utf8.count
+            if used + length > limit { break }
+            prefix.append(character)
+            used += length
+        }
+        return .truncated(prefix: prefix, totalSize: size)
     }
 }
 

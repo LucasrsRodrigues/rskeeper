@@ -62,8 +62,8 @@
       "testOnly": true
     },
     "RSKeeperDriverSQLite": {
-      "prospective": true,
-      "declaredDependencies": ["RSKeeperDriversCore"],
+      "declaredDependencies": ["RSKeeperDriversCore", "RSKeeperSQLKit"],
+      "comment": "SQLKit: camada 3 do somente leitura (classificação) e tag de comando (SPK-N05).",
       "allowedImports": ["RSKeeperDomain", "RSKeeperSQLKit", "RSKeeperDriversCore"],
       "forbiddenImports": ["SwiftUI", "AppKit", "RSKeeperApplication", "RSKeeperFeatures", "RSKeeperPersistence"],
       "externalDependencies": ["GRDB"]

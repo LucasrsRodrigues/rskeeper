@@ -36,6 +36,7 @@ let package = Package(
         .library(name: "RSKeeperSecurity", targets: ["RSKeeperSecurity"]),
         .library(name: "RSKeeperPersistence", targets: ["RSKeeperPersistence"]),
         .library(name: "RSKeeperDriversCore", targets: ["RSKeeperDriversCore"]),
+        .library(name: "RSKeeperDriverSQLite", targets: ["RSKeeperDriverSQLite"]),
         .library(name: "RSKeeperApplication", targets: ["RSKeeperApplication"]),
         .library(name: "RSKeeperDesignSystem", targets: ["RSKeeperDesignSystem"]),
         .library(name: "RSKeeperSQLEditor", targets: ["RSKeeperSQLEditor"]),
@@ -97,6 +98,15 @@ let package = Package(
             name: "RSKeeperDesignSystem",
             resources: [.process("Resources")]
         ),
+        // Driver SQLite sobre GRDB (NST-04-02; regras do SPK-N05). Registrado só na raiz de composição.
+        .target(
+            name: "RSKeeperDriverSQLite",
+            dependencies: [
+                "RSKeeperDriversCore",
+                "RSKeeperSQLKit",
+                .product(name: "GRDB", package: "GRDB.swift"),
+            ]
+        ),
         // Editor SQL (vazio na Onda 0 — decisão E-1; implementação após o SPK-N01).
         .target(
             name: "RSKeeperSQLEditor",
@@ -153,6 +163,10 @@ let package = Package(
         .testTarget(
             name: "RSKeeperDriversCoreTests",
             dependencies: ["RSKeeperDriversCore", "RSKeeperTesting"]
+        ),
+        .testTarget(
+            name: "RSKeeperDriverSQLiteTests",
+            dependencies: ["RSKeeperDriverSQLite", "RSKeeperTesting"]
         ),
         .testTarget(
             name: "RSKeeperApplicationTests",
