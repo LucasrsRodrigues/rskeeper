@@ -1,0 +1,58 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.xcresult
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/*/.build/
+Packages/*/.swiftpm/
+
+# Distribuição (artefatos locais; nunca versionar)
+*.dmg
+*.pkg
+*.zip
+*.app
+dist/
+export/
+
+# Assinatura e segredos (nunca versionar)
+*.p12
+*.cer
+*.certSigningRequest
+*.mobileprovision
+*.provisionprofile
+*.p8
+AuthKey_*.p8
+.env
+.env.*
+*.keychain-db
+
+# Dados locais de teste / raiz de dados (-RSKeeperDataRoot)
+TestDataRoot/
+*.sqlite-shm
+*.sqlite-wal
+
+# Editores
+.vscode/
+.idea/
+*.swp
