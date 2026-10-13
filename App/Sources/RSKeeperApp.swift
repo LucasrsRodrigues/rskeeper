@@ -1,11 +1,36 @@
+import AppKit
+import RSKeeperApplication
+import RSKeeperDesignSystem
 import SwiftUI
 
 /// Aplicação SwiftUI (iniciada por `RSKeeperMain` depois da guarda de ambiente).
 struct RSKeeperApp: App {
+    private let environment = EnvironmentGuard.environment
+
+    init() {
+        // Abas nativas de NSWindow desligadas: várias conexões abrem várias janelas (docs/native/10).
+        NSWindow.allowsAutomaticWindowTabbing = false
+    }
+
     var body: some Scene {
-        WindowGroup {
-            Text("RSKeeper")
-                .frame(minWidth: 480, minHeight: 320)
+        Window("Connections", id: SceneID.connections) {
+            ConnectionsWindowView(environment: environment.kind)
+        }
+        .defaultSize(width: 760, height: 480)
+        .commands { BaseCommands() }
+
+        WindowGroup("Workspace", id: SceneID.workspace, for: WorkspaceWindowID.self) { $id in
+            WorkspaceWindowView(id: id)
+        }
+
+        #if RSK_DEV_BUILD || RSK_TEST_BUILD
+        Window("Component Gallery", id: SceneID.gallery) {
+            ComponentGallery()
+        }
+        #endif
+
+        Settings {
+            SettingsView()
         }
     }
 }
