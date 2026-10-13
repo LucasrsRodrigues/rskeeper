@@ -69,8 +69,8 @@
       "externalDependencies": ["GRDB"]
     },
     "RSKeeperDriverPostgreSQL": {
-      "prospective": true,
-      "declaredDependencies": ["RSKeeperDriversCore"],
+      "declaredDependencies": ["RSKeeperDriversCore", "RSKeeperSQLKit"],
+      "comment": "SQLKit: divisor obrigatório, recusa de COPY e camada 1 do somente leitura (SPK-N03).",
       "allowedImports": ["RSKeeperDomain", "RSKeeperSQLKit", "RSKeeperDriversCore"],
       "forbiddenImports": ["SwiftUI", "AppKit", "GRDB", "RSKeeperApplication", "RSKeeperFeatures", "RSKeeperPersistence"],
       "externalDependencies": ["PostgresNIO"]

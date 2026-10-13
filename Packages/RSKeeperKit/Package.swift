@@ -186,7 +186,8 @@ let package = Package(
         ),
         .testTarget(
             name: "RSKeeperApplicationTests",
-            dependencies: ["RSKeeperApplication", "RSKeeperTesting"]
+            // O driver SQLite dá semântica real de transação aos testes de script (NT-DRV-09).
+            dependencies: ["RSKeeperApplication", "RSKeeperTesting", "RSKeeperDriverSQLite"]
         ),
         .testTarget(
             name: "RSKeeperDesignSystemTests",

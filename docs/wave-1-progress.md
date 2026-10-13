@@ -11,6 +11,7 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 | W1-T04 Driver PostgreSQL (NST-04-03) | Concluída | `RSKeeperDriverPostgreSQLTests` contra PG 14.24, 16.15 e 17.11: **12/12 × 3** verificações de conformidade; corrida de cancelamento (60× por versão, com controle positivo); tipos binários; `COPY` bloqueado; estados de transação; erros de conexão; metadados |
 | W1-T05 PostgreSQL de teste e job de drivers | Concluída | `scripts/ci/pg-test.sh`, `scripts/ci/test-drivers.sh` (falha se uma suíte de driver for pulada); job `drivers-containers` ativado no CI |
 | W1-T06 Repositórios de perfis, pastas e fixadas (NST-02-03) | Concluída | `ProfileRepositoryTests` (7): ida e volta, conflito de revisão, nome único por pasta, recentes sem mudar revisão, fixar/desafixar, pasta excluída, observação entre "janelas", banco só leitura; migração V2 com dados preservados |
+| W1-T07 Executar e cancelar (NST-07-02) | Concluída | `ExecuteQueryTests` (6, com SQLite real): NT-DRV-09 (falha na 2ª de 3), BEGIN…COMMIT/ROLLBACK e ROLLBACK TO, Auto desfaz BEGIN aberto com aviso, DR-06, busy na mesma aba, cancelamento ≤ 1 s pela sessão; plano (atual, seleção, parâmetros, somente leitura, COPY) |
 | W1-T03 Driver SQLite (NST-04-02) | Concluída | `RSKeeperDriverSQLiteTests`: **12/12** verificações de conformidade (nenhuma pulada); NT-DRV-12 (journal e sidecars); WAL sem sidecars em somente leitura; isolamento entre conexões; tipos; redação |
 
 ## Decisões
@@ -32,6 +33,9 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 
 | W1-D11 | Migração V2 `pinned_position` no perfil para as conexões **fixadas** da sidebar; fixar e usar não mudam a revisão | A tabela `pin` da V1 é de entidades do explorador; a NST-03-01 pede conexões fixadas. Organização da sidebar não pode invalidar uma edição em outra janela. O repositório de entidades fixadas fica para quando o explorador tiver fixação (fora dos critérios da onda 1) |
 
+| W1-D12 | Scripts rodam numa única conexão; `committed` decidido pelo estado real de transação, resolvido quando a transação fecha (COMMIT efetiva, ROLLBACK desfaz) | DR-13: "o que foi efetivado" precisa ser verdade, inclusive com BEGIN/COMMIT dentro do script |
+| W1-D13 | `PlaceholderStyle` do SQLKit renomeado para `SQLPlaceholderStyle` | Os enums marcadores com o nome do módulo impedem qualificar `Módulo.Tipo`; os dois tipos eram nossos |
+
 ## Achados
 
 - O CI no runner próprio, com árvore limpa, encontrou 4 avisos em `ComponentTests` que o build incremental escondia (corrigido; registrado em wave-0-exit.md).
@@ -40,3 +44,5 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 - **PID lido errado (PostgreSQL):** `pg_backend_pid()` decodificado como `String` sobre o formato binário dava lixo; o PID virava 0 e o cancelamento guardado nunca agia. O teste de corrida passava **trivialmente**. Correção: `::text`, conexão recusada sem PID e controle positivo no teste.
 - **Suíte de conformidade:** pedia a alça geral antes de a execução começar; corrigida para pedir com a execução em curso, como a sessão faz.
 - **Primeiro run completo do CI no GitHub (runner próprio): 16/16 verde** (run 38483217094).
+- **Gate mascarado (erro meu):** no commit da W1-T04 rodei `check-boundaries.sh | tail -1`; o pipe escondeu a linha de violação (regra do driver PostgreSQL sem `RSKeeperSQLKit`) e trocou o código de saída pelo do `tail`. O commit dizia "fronteiras OK" sem a verificação ter passado. O CI no GitHub reprovou (run 38486274021); regra corrigida. Desde então os gates rodam sem pipe e com o código de saída conferido.
+- **Job de drivers no GitHub:** passou na primeira execução (PostgreSQL 14/16/17 no Docker do runner próprio).

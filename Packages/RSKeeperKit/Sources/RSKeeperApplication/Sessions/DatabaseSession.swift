@@ -24,6 +24,7 @@ public actor DatabaseSession {
     private var manualTransactions: [TabID: any PhysicalConnection] = [:]
     private var running: [ExecutionID: (tab: TabID, connection: any PhysicalConnection)] = [:]
     private var finished: [ExecutionID: Result<StatementOutcome, RSKeeperError>] = [:]
+    private var finishedScripts: [ExecutionID: ScriptOutcome] = [:]
     private var finishedOrder: [ExecutionID] = []
     private let finishedCapacity: Int
     private var closed = false
@@ -101,6 +102,133 @@ public actor DatabaseSession {
     public func cancel(_ executionID: ExecutionID) async {
         guard let entry = running[executionID] else { return }
         await entry.connection.cancelHandle(for: executionID)?.cancel()
+    }
+
+    // MARK: Scripts (NST-07-02; DR-13)
+
+    /// Executa as instruções em ordem, numa única conexão, e **para na primeira falha**.
+    ///
+    /// - Cada instrução recebe `status` e `committed` (sim, não ou desconhecido), conforme o estado
+    ///   de transação observado depois dela.
+    /// - Em modo Auto, uma transação deixada aberta pelo script é desfeita na devolução, com aviso.
+    /// - Repetir o mesmo `ExecutionID` devolve o desfecho registrado, sem reexecutar (DR-06).
+    public func executeScript(_ statements: [PlannedStatement], tab: TabID, executionID: ExecutionID,
+                              limits: ReadLimits = .default) async throws(RSKeeperError) -> ScriptOutcome {
+        guard !closed else { throw .notFound(.unknown) }
+        if let previous = finishedScripts[executionID] { return previous }
+        guard running[executionID] == nil else { throw .conflict(.duplicateID) }
+        guard !statements.isEmpty else { throw .validation(RedactedMessage(alreadyRedacted: "Nenhuma instrução para executar.")) }
+        guard !busyTabs.contains(tab) else { throw .conflict(.busy) }               // DR-20
+        busyTabs.insert(tab)
+        defer { busyTabs.remove(tab) }
+
+        let manual = manualTransactions[tab] != nil
+        let lease: ConnectionLease
+        if let transactionConnection = manualTransactions[tab] {
+            lease = ConnectionLease(connection: transactionConnection, owner: .transaction(tab))
+        } else {
+            lease = try await acquire(owner: .execution(executionID))
+        }
+        let connection = lease.connection
+        running[executionID] = (tab, connection)
+
+        var reports: [StatementReport] = []
+        var outcomes: [StatementOutcome?] = []
+        /// Instruções cujas alterações estão numa transação ainda aberta: decididas no fim.
+        var pending: Set<Int> = []
+        var stop = false
+        var cancelled = false
+        var lostConnection = false
+        for (index, planned) in statements.enumerated() {
+            if stop {
+                reports.append(StatementReport(index: index, risk: planned.risk, status: .skipped, committed: .no))
+                outcomes.append(nil)
+                continue
+            }
+            let statement = BoundStatement(sql: planned.statement.sql, bindings: planned.statement.bindings, executionID: executionID)
+            do {
+                let outcome = try await withTaskCancellationHandler {
+                    try await connection.execute(statement, limits: limits)
+                } onCancel: {
+                    let handle = connection.cancelHandle(for: executionID)
+                    Task { await handle?.cancel() }
+                }
+                let affected: Int? = if case .affected(let count) = outcome { count } else { nil }
+                let committed = await commitState(after: planned.risk, on: connection, manual: manual)
+                reports.append(StatementReport(index: index, risk: planned.risk, status: .ok, committed: committed ?? .no,
+                                               affectedRows: affected))
+                if committed == nil {
+                    pending.insert(index)
+                } else if !pending.isEmpty, !manual {
+                    // A transação aberta pelo script acabou de fechar: COMMIT efetiva as pendentes; ROLLBACK as desfaz.
+                    let effective: CommitState = Self.endsByRollback(planned.statement.sql) ? .no : .yes
+                    for pendingIndex in pending {
+                        let old = reports[pendingIndex]
+                        reports[pendingIndex] = StatementReport(index: old.index, risk: old.risk, status: old.status,
+                                                                committed: effective, affectedRows: old.affectedRows)
+                    }
+                    pending.removeAll()
+                }
+                outcomes.append(outcome)
+            } catch {
+                let failure = DriverError.normalized(error)
+                stop = true
+                if case .cancelled = failure { cancelled = true }
+                if case .connection = failure { lostConnection = true }
+                let status: StatementStatus = cancelled ? .cancelled : .failed(failure.applicationError)
+                // Queda de conexão no meio de uma escrita: não dá para saber se efetivou (DR-05/07).
+                let committed: CommitState = lostConnection && planned.risk != .read ? .unknown : .no
+                reports.append(StatementReport(index: index, risk: planned.risk, status: status, committed: committed))
+                outcomes.append(nil)
+            }
+        }
+        running[executionID] = nil
+
+        var rolledBack = false
+        if !manual, !lostConnection, await connection.transactionState() != .idle {
+            // Modo Auto: transação aberta pelo script é desfeita na devolução (DR-17), com aviso.
+            rolledBack = true
+        }
+        // Pendentes que sobraram: a transação continuou aberta até o fim (desfeita) ou caiu junto com a conexão.
+        for pendingIndex in pending {
+            let old = reports[pendingIndex]
+            reports[pendingIndex] = StatementReport(index: old.index, risk: old.risk, status: old.status,
+                                                    committed: lostConnection ? .unknown : .no, affectedRows: old.affectedRows)
+        }
+        if manual {
+            _ = consume lease
+        } else {
+            await release(lease, discard: cancelled || lostConnection)
+        }
+        let result = ScriptOutcome(reports: reports, outcomes: outcomes, autoRolledBackTransaction: rolledBack)
+        rememberScript(executionID, result)
+        return result
+    }
+
+    /// `ROLLBACK`/`ABORT` encerram desfazendo; `ROLLBACK TO SAVEPOINT` não encerra a transação.
+    private static func endsByRollback(_ sql: String) -> Bool {
+        let words = sql.uppercased().split(whereSeparator: { $0.isWhitespace || $0 == ";" }).prefix(2).map(String.init)
+        guard let first = words.first, first == "ROLLBACK" || first == "ABORT" else { return false }
+        return words.count < 2 || words[1] != "TO"
+    }
+
+    /// `nil` = pendente (transação aberta pelo script; decidido quando ela fechar).
+    private func commitState(after risk: StatementRisk, on connection: any PhysicalConnection, manual: Bool) async -> CommitState? {
+        if risk == .read { return .no }                                              // nada a efetivar
+        if manual { return .no }                                                     // efetiva só no COMMIT da aba
+        return await connection.transactionState() == .idle ? .yes : nil
+    }
+
+    public func scriptOutcome(of executionID: ExecutionID) -> ScriptOutcome? { finishedScripts[executionID] }
+
+    private func rememberScript(_ executionID: ExecutionID, _ outcome: ScriptOutcome) {
+        finishedScripts[executionID] = outcome
+        finishedOrder.append(executionID)
+        if finishedOrder.count > finishedCapacity {
+            let evicted = finishedOrder.removeFirst()
+            finished[evicted] = nil
+            finishedScripts[evicted] = nil
+        }
     }
 
     /// Desfecho registrado de uma execução terminal (DR-06), se ainda em memória.
@@ -226,7 +354,9 @@ public actor DatabaseSession {
         finished[executionID] = result
         finishedOrder.append(executionID)
         if finishedOrder.count > finishedCapacity {
-            finished[finishedOrder.removeFirst()] = nil
+            let evicted = finishedOrder.removeFirst()
+            finished[evicted] = nil
+            finishedScripts[evicted] = nil
         }
     }
 }

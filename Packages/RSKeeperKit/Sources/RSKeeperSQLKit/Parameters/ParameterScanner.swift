@@ -1,5 +1,5 @@
 /// Estilo de placeholder do driver (doc 04 §7).
-public enum PlaceholderStyle: Sendable, Hashable {
+public enum SQLPlaceholderStyle: Sendable, Hashable {
     /// `?` (SQLite, MySQL): um por ocorrência; o mesmo nome repetido é ligado de novo.
     case questionMark
     /// `$1, $2…` (PostgreSQL): um número por nome; repetições reaproveitam o número.
@@ -27,7 +27,7 @@ public enum ParameterScanner {
         return namedTokens(statement, lexed).compactMap { seen.insert($0.name).inserted ? $0.name : nil }
     }
 
-    public static func rewrite(_ statement: SQLStatement, lexed: LexedSQL, style: PlaceholderStyle)
+    public static func rewrite(_ statement: SQLStatement, lexed: LexedSQL, style: SQLPlaceholderStyle)
         throws(ParameterError) -> RewrittenStatement {
         let named = namedTokens(statement, lexed)
         let positional = lexed.tokens[statement.tokenRange].contains { $0.kind == .parameter && !isNamed($0, lexed) }
