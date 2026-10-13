@@ -160,7 +160,9 @@ let package = Package(
         ),
         .testTarget(
             name: "RSKeeperDesignSystemTests",
-            dependencies: ["RSKeeperDesignSystem"]
+            dependencies: ["RSKeeperDesignSystem"],
+            // Referências de snapshot (NT-SNAP-01) são lidas por caminho, não empacotadas.
+            exclude: ["__Snapshots__"]
         ),
         .testTarget(
             name: "RSKeeperFeaturesTests",
