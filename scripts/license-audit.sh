@@ -36,7 +36,9 @@ while IFS='|' read -r identity version; do
   if ! jq -e --arg l "$license" '.allowedLicenses | index($l)' "$registry" > /dev/null; then
     echo "license-audit: VIOLAÇÃO: $identity com licença $license fora da allowlist" >&2; status=1
   fi
-  checkout="$(ls -d "$pkg"/.build/checkouts/* 2>/dev/null | while read -r c; do [ "$(basename "$c" | tr 'A-Z' 'a-z')" = "$identity" ] && echo "$c"; done | head -1)"
+  # Sem checkout (runner limpo), a comparação de texto é pulada; pipefail não pode abortar o script.
+  checkout="$( { ls -d "$pkg"/.build/checkouts/* 2>/dev/null || true; } | while read -r c; do
+    if [ "$(basename "$c" | tr 'A-Z' 'a-z')" = "$identity" ]; then echo "$c"; fi; done | head -1)"
   if [ -n "$checkout" ]; then
     lic="$(ls "$checkout"/LICENSE* "$checkout"/COPYING* 2>/dev/null | head -1 || true)"
     if [ -n "$lic" ]; then

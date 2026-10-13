@@ -24,6 +24,7 @@ step toolchain scripts/check-toolchain.sh
 step hygiene scripts/ci/hygiene.sh
 step test-kit scripts/ci/test-kit.sh
 step boundaries scripts/check-boundaries.sh
+step negative-checks scripts/ci/negative-checks.sh
 for c in Dev Test Release; do for sb in YES NO; do step "build-$c-sb$sb" scripts/ci/build.sh $c $sb; done; done
 for sb in YES NO; do step "test-app-sb$sb" scripts/ci/test-app.sh $sb; step "footprint-sb$sb" scripts/ci/fs-footprint.sh $sb; done
 step license-audit scripts/license-audit.sh

@@ -47,6 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: scripts/check-boundaries.sh
+      - run: scripts/ci/negative-checks.sh   # cada check reprova uma violação proposital
 
   build:
     needs: boundaries
