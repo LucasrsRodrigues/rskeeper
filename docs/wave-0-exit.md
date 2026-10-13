@@ -68,7 +68,7 @@ O app (`App/`) não entra nessa medição; ele é coberto pelos XCUITests.
 
 | ID | Pendência | Impacto | Próximo passo |
 |---|---|---|---|
-| P-01 | **Atualizado em 2026-10-13:** o CI rodou no GitHub e falhou no job toolchain, porque a imagem `macos-26` só tem Xcode 26.0.1…26.6, sem Xcode 27. Decisão pendente: runner próprio, esperar a imagem ou outro toolchain | Os scripts são os mesmos e passam localmente; o YAML não foi exercitado | Push autorizado → primeira execução → ajustar runner e Xcode |
+| P-01 | **Atualizado em 2026-10-13:** o CI rodou no GitHub e falhou no job toolchain, porque a imagem `macos-26` só tem Xcode 26.0.1…26.6, sem Xcode 27. **Decidido:** runner próprio (este Mac, rótulo `rskeeper-xcode27`), com PRs de fork bloqueados e aprovação obrigatória para colaboradores externos | Os scripts são os mesmos e passam localmente; o YAML não foi exercitado | Push autorizado → primeira execução → ajustar runner e Xcode |
 | P-02 | ~~SPK-N01 em andamento~~ **Resolvida:** alternativa A aprovada | — | — |
 | P-03 | `fs-footprint` só detecta caminhos **novos** com "rskeeper" no nome, até profundidade 4 em `~/Library`; escritas em arquivos já existentes não são vistas | Cobertura parcial do item 5 | Ampliar com `fs_usage` ou Endpoint Security na onda 1 |
 | P-04 | Validações manuais: VoiceOver, host macOS 26.0 exato (só 26.6.2 testado), Intel (D-N8), prompts do Keychain em runner de CI (R-W0-03) | Fora do alcance não interativo | Checklist manual antes do portão da onda 1 |

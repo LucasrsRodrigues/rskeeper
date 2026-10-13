@@ -1,6 +1,6 @@
 # Onda 1 — plano de execução (fatia vertical)
 
-**Status: PROPOSTA, aguardando aprovação.** Este plano segue o formato do plano da Onda 0. A fonte das histórias e dos critérios de aceite é o backlog e o roadmap do blueprint: `docs/native/11` §4 e `docs/native/15` "Onda 1", no repositório de investigação. Aqui ficam só a quebra em tarefas, a ordem, as emendas dos spikes e as decisões pendentes.
+**Status: APROVADO em 2026-10-13** (execução autônoma, commits por marco). Este plano segue o formato do plano da Onda 0. A fonte das histórias e dos critérios de aceite é o backlog e o roadmap do blueprint: `docs/native/11` §4 e `docs/native/15` "Onda 1", no repositório de investigação. Aqui ficam só a quebra em tarefas, a ordem, as emendas dos spikes e as decisões pendentes.
 
 **Objetivo:** provar a arquitetura de ponta a ponta no fluxo **conectar → explorar → abrir tabela → consultar**, com SQLite e PostgreSQL, usando só o teclado.
 
@@ -98,7 +98,7 @@ D: T25 ─► T26 ─► T27  (depois de tudo)
 
 | ID | Decisão | Recomendação |
 |---|---|---|
-| **D-W1-1** | Como rodar o PostgreSQL de teste. Os runners macOS do GitHub **não têm Docker**, e os testes do driver precisam de macOS (o pacote é só macOS 26) | **Local:** Docker Desktop (já instalado; o N03 usou), containers `--rm` e só dados sintéticos. **CI:** PostgreSQL 14, 16 e 17 via Homebrew no runner macOS, cada versão numa porta e num diretório temporário. Nenhum serviço externo |
+| **D-W1-1** | Como rodar o PostgreSQL de teste | **Decidido:** Docker Desktop, local e no CI (o CI roda no runner próprio deste Mac, porque as imagens do GitHub não têm Xcode 27). Containers `--rm` com nomes `rskeeper-test-pg*`, só dados sintéticos, versões 14, 16 e 17. Nenhum serviço externo |
 | **D-W1-2** | Dependências novas da PostgresNIO (swift-nio, nio-ssl, nio-transport-services, swift-crypto, swift-log, swift-collections, swift-atomics, swift-service-lifecycle, swift-metrics etc.) | Aceitar com **versões exatas** no `Package.resolved`; todas Apache-2.0 ou MIT, registradas na auditoria de licenças antes do primeiro commit |
 | **D-W1-3** | Menus sem captura (split button, botão de conexão, nova aba) | Seguir como `[DECISÃO]` do backlog, com itens mínimos, e ajustar se as capturas chegarem |
 | **D-W1-4** | Critérios que exigem validação manual (VoiceOver nos 4 fluxos e fps no Instruments) | Checklist manual no portão de saída, como na Onda 0; o portão só é "aprovado" com ele feito |
@@ -123,4 +123,4 @@ Também precisam passar as pendências manuais da Onda 0 (P-04).
 | Cancelamento PG atingindo a consulta errada | Marcador guardado + teste de corrida com 1.000 repetições na conformidade |
 | Tempo de CI alto (5 M de linhas, 3 versões de PG) | O truncamento de 5 M roda só no job de drivers; o resto usa fixtures menores |
 | PostgresNIO com avisos de concorrência no Swift 6.4 | O N03 mediu 0 avisos; `@preconcurrency` só com registro (R-W0-01) |
-| Homebrew sem uma das versões antigas de PG no runner | Fixar as fórmulas `postgresql@14/16/17`; se faltar uma, o job falha cedo com mensagem clara |
+| Docker Desktop parado no runner | O job de drivers verifica `docker info` primeiro e falha cedo com mensagem clara |

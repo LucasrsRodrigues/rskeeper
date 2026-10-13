@@ -1,6 +1,12 @@
 # CI da onda 0 (W0-T16; NST-00-04). Ordem do plano 23 §W0-T16. Sem certificados reais: tudo é
 # assinado ad hoc (CODE_SIGN_IDENTITY=-). Sem segredos, sem publicação, sem telemetria.
 # Cada job chama os mesmos scripts usados localmente (scripts/ci/*.sh).
+#
+# Runner: self-hosted (o Mac de desenvolvimento, rótulo rskeeper-xcode27), porque as imagens macOS
+# do GitHub não têm o Xcode 27 fixado em .xcode-version.
+# SEGURANÇA (repositório público): PRs vindos de forks NUNCA rodam aqui — o job toolchain é pulado
+# e todos os outros dependem dele. Além disso, o repositório exige aprovação para workflows de
+# qualquer colaborador externo (fork-pr-contributor-approval = all_external_contributors).
 name: ci
 
 on:
@@ -18,7 +24,8 @@ concurrency:
 
 jobs:
   toolchain:
-    runs-on: macos-26
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, macOS, ARM64, rskeeper-xcode27]
     steps:
       - uses: actions/checkout@v4
       - run: scripts/ci/select-xcode.sh   # Xcode de .xcode-version → DEVELOPER_DIR
@@ -26,7 +33,7 @@ jobs:
 
   hygiene:
     needs: toolchain
-    runs-on: macos-26
+    runs-on: [self-hosted, macOS, ARM64, rskeeper-xcode27]
     steps:
       - uses: actions/checkout@v4
       - run: scripts/ci/select-xcode.sh   # Xcode de .xcode-version → DEVELOPER_DIR
@@ -34,7 +41,7 @@ jobs:
 
   test-kit:
     needs: hygiene
-    runs-on: macos-26
+    runs-on: [self-hosted, macOS, ARM64, rskeeper-xcode27]
     steps:
       - uses: actions/checkout@v4
       - run: scripts/ci/select-xcode.sh   # Xcode de .xcode-version → DEVELOPER_DIR
@@ -42,7 +49,7 @@ jobs:
 
   boundaries:
     needs: test-kit
-    runs-on: macos-26
+    runs-on: [self-hosted, macOS, ARM64, rskeeper-xcode27]
     steps:
       - uses: actions/checkout@v4
       - run: scripts/ci/select-xcode.sh   # Xcode de .xcode-version → DEVELOPER_DIR
@@ -51,7 +58,7 @@ jobs:
 
   build:
     needs: boundaries
-    runs-on: macos-26
+    runs-on: [self-hosted, macOS, ARM64, rskeeper-xcode27]
     strategy:
       fail-fast: false
       matrix:
@@ -64,7 +71,7 @@ jobs:
 
   test-app:
     needs: build
-    runs-on: macos-26
+    runs-on: [self-hosted, macOS, ARM64, rskeeper-xcode27]
     strategy:
       fail-fast: false
       matrix:
@@ -77,7 +84,7 @@ jobs:
 
   license-audit:
     needs: test-app
-    runs-on: macos-26
+    runs-on: [self-hosted, macOS, ARM64, rskeeper-xcode27]
     steps:
       - uses: actions/checkout@v4
       - run: scripts/ci/select-xcode.sh   # Xcode de .xcode-version → DEVELOPER_DIR
@@ -85,7 +92,7 @@ jobs:
 
   artifact:
     needs: license-audit
-    runs-on: macos-26
+    runs-on: [self-hosted, macOS, ARM64, rskeeper-xcode27]
     steps:
       - uses: actions/checkout@v4
       - run: scripts/ci/select-xcode.sh   # Xcode de .xcode-version → DEVELOPER_DIR
