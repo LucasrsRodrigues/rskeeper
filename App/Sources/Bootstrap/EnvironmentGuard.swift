@@ -24,11 +24,24 @@ enum EnvironmentGuard {
                 applicationSupport: DataRoot.currentApplicationSupport(),
                 protectedRoots: AppEnvironment.defaultProtectedRoots(home: home, bundleIDBase: baseID))
             try environment.dataRoot.prepare()
-            _ = try environment.dataRoot.sweepTemporaryFiles()
+            let swept = try environment.dataRoot.sweepTemporaryFiles()
+            logStart(environment, baseID: baseID, swept: swept)
             return environment
         } catch {
             refuse("\(error)")
         }
+    }
+
+    /// Primeiro evento de log, já com a raiz resolvida. A raiz é campo **privado** (NT-SEC-20:
+    /// aparece como `<private>` no `log show` sem perfil de depuração).
+    private static func logStart(_ environment: AppEnvironment, baseID: String, swept: Int) {
+        let logger = RKLogger(subsystem: RKLogger.subsystem(bundleIDBase: baseID, environment: environment.kind),
+                              category: "lifecycle")
+        logger.notice("app.started", [
+            "environment": .public(environment.kind.rawValue),
+            "sweptTemporaryFiles": .public(String(swept)),
+            "dataRoot": .private(environment.dataRoot.url.path),
+        ])
     }
 
     /// Bundle ID sem o sufixo do ambiente (`.dev`, `.test`).

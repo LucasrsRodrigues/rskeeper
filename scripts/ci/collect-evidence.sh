@@ -28,5 +28,6 @@ for c in Dev Test Release; do for sb in YES NO; do step "build-$c-sb$sb" scripts
 for sb in YES NO; do step "test-app-sb$sb" scripts/ci/test-app.sh $sb; step "footprint-sb$sb" scripts/ci/fs-footprint.sh $sb; done
 step license-audit scripts/license-audit.sh
 for sb in YES NO; do step "artifact-sb$sb" scripts/ci/package-adhoc.sh $sb; done
+step log-privacy scripts/ci/log-privacy.sh YES
 echo; echo "resultado: $([[ $overall == 0 ]] && echo VERDE || echo VERMELHO) — $summary"
 exit $overall

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Artefato .app ad hoc (portão §4 item 6): Hardened Runtime verificado por codesign, entitlements
+# NT-SEC-05 (versão da onda 0). Artefato .app ad hoc (portão §4 item 6): Hardened Runtime verificado por codesign, entitlements
 # iguais à allowlist da variante, sem get-task-allow. Saída em dist/ (fora do git).
 source "$(dirname "$0")/lib.sh"
 sandbox="${1:-YES}"

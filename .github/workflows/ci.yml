@@ -85,6 +85,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: scripts/ci/build.sh Release YES && scripts/ci/package-adhoc.sh YES
+      - run: scripts/ci/log-privacy.sh YES
       - uses: actions/upload-artifact@v4
         with:
           name: RSKeeper-wave0-adhoc
