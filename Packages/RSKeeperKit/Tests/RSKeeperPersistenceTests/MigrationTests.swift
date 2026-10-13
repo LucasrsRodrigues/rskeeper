@@ -35,12 +35,13 @@ private struct Sandbox {
     func cleanup() { try? FileManager.default.removeItem(at: base) }
 }
 
-/// Esquema esperado da v1 (snapshot em código): tabela → colunas.
-private let expectedV1Schema: [String: [String]] = [
+/// Esquema esperado depois de todas as migrações (snapshot em código): tabela → colunas.
+private let expectedSchema: [String: [String]] = [
     "folder": ["id", "name", "parent_id", "position", "expanded", "kind"],
     "profile": ["id", "name", "driver_id", "folder_id", "label_color", "environment", "environment_custom_id",
                 "environment_confirmed", "read_only", "target_json", "tls_json", "ssh_json", "default_database",
-                "driver_options_json", "save_passwords", "is_draft", "revision", "created_at", "updated_at", "last_used_at"],
+                "driver_options_json", "save_passwords", "is_draft", "revision", "created_at", "updated_at", "last_used_at",
+                "pinned_position"],                                                              // v2
     "secret_ref": ["profile_id", "purpose", "fingerprint", "state"],
     "file_grant": ["id", "profile_id", "purpose", "bookmark", "display_path", "read_only", "created_at"],
     "pin": ["profile_id", "entity_json", "kind", "position"],
@@ -66,7 +67,7 @@ struct MigrationTests {
         defer { box.cleanup() }
         let database = try await MigrationRunner(root: box.root, appVersion: "0.0.1").open()
         #expect(database.mode == .readWrite)
-        #expect(try await database.appliedMigrations() == ["v1_initial"])
+        #expect(try await database.appliedMigrations() == MigrationCatalog.standard.map(\.identifier))
         #expect(database.path == box.root.databaseFile.path)
         let schema = try await database.read { db -> [String: [String]] in
             let tables = try String.fetchAll(db, sql: """
@@ -77,10 +78,32 @@ struct MigrationTests {
             for table in tables { result[table] = try db.columns(in: table).map(\.name) }
             return result
         }
-        #expect(schema == expectedV1Schema)
+        #expect(schema == expectedSchema)
         let journal = try await database.read { db in try String.fetchOne(db, sql: "PRAGMA journal_mode") }
         #expect(journal == "wal")
         #expect(try BackupManager(root: box.root).backups().isEmpty, "banco novo não precisa de backup")
+    }
+
+    @Test("V2 (W1-T06): banco v1 com dados migra sem perder linhas; perfis ficam desafixados")
+    func v1ToV2PreservesData() async throws {
+        let box = try Sandbox()
+        defer { box.cleanup() }
+        let v1 = try await MigrationRunner(root: box.root, migrations: [MigrationCatalog.standard[0]], appVersion: "0.0.1").open()
+        try await v1.write { db in
+            try db.execute(sql: """
+                INSERT INTO profile (id, name, driver_id, environment, target_json, created_at, updated_at)
+                VALUES (x'00112233445566778899aabbccddeeff', 'antigo', 'sqlite', 'local', '{}', '2026-01-01', '2026-01-01')
+                """)
+        }
+        let current = try await MigrationRunner(root: box.root, appVersion: "0.0.2").open()
+        #expect(current.mode == .readWrite)
+        #expect(try await current.appliedMigrations() == ["v1_initial", "v2_profile_pins"])
+        let row = try await current.read { db -> (String, Int?)? in
+            try Row.fetchOne(db, sql: "SELECT name, pinned_position FROM profile").map { ($0["name"], $0["pinned_position"]) }
+        }
+        #expect(row?.0 == "antigo")
+        #expect(row?.1 == nil)
+        #expect(try BackupManager(root: box.root).backups().count == 1, "migração com dados gera backup")
     }
 
     @Test("NT-MIG-03: rodar o migrador duas vezes não altera nada")
@@ -92,7 +115,7 @@ struct MigrationTests {
         let second = try await MigrationRunner(root: box.root, appVersion: "0.0.1").open()
         let after = try await second.read { db in try String?.fetchAll(db, sql: "SELECT sql FROM sqlite_master ORDER BY name") }
         #expect(before == after)
-        #expect(try await second.appliedMigrations() == ["v1_initial"])
+        #expect(try await second.appliedMigrations() == MigrationCatalog.standard.map(\.identifier))
         #expect(try BackupManager(root: box.root).backups().isEmpty, "sem migração pendente, sem backup")
     }
 
@@ -112,7 +135,7 @@ struct MigrationTests {
         guard case .recovery(let failed, let backup?) = database.mode else { Issue.record("modo: \(database.mode)"); return }
         #expect(failed == "v2_falha")
         #expect(FileManager.default.fileExists(atPath: backup.path))
-        #expect(try await database.appliedMigrations() == ["v1_initial"])
+        #expect(try await database.appliedMigrations() == MigrationCatalog.standard.map(\.identifier))
         let partialExists = try await database.read { db in try db.tableExists("parcial") }
         #expect(!partialExists, "a migração que falhou foi desfeita inteira")
         await #expect(throws: PersistenceError.readOnlyDatabase) { try await database.write { _ in () } }

@@ -18,5 +18,6 @@ public enum MigrationCatalog {
     /// Migrações do produto, em ordem.
     public static let standard: [Migration] = [
         Migration(identifier: V1Initial.identifier, body: V1Initial.migrate),
+        Migration(identifier: V2ProfilePins.identifier, body: V2ProfilePins.migrate),
     ]
 }

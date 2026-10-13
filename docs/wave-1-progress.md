@@ -10,6 +10,7 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 | W1-T02 Contrato de stream e conformidade (NST-04-01) | Concluída | `ConformanceTests`: 8 verificações obrigatórias no driver em memória; 4 puladas com motivo (exigem SQL real); teste de sensibilidade |
 | W1-T04 Driver PostgreSQL (NST-04-03) | Concluída | `RSKeeperDriverPostgreSQLTests` contra PG 14.24, 16.15 e 17.11: **12/12 × 3** verificações de conformidade; corrida de cancelamento (60× por versão, com controle positivo); tipos binários; `COPY` bloqueado; estados de transação; erros de conexão; metadados |
 | W1-T05 PostgreSQL de teste e job de drivers | Concluída | `scripts/ci/pg-test.sh`, `scripts/ci/test-drivers.sh` (falha se uma suíte de driver for pulada); job `drivers-containers` ativado no CI |
+| W1-T06 Repositórios de perfis, pastas e fixadas (NST-02-03) | Concluída | `ProfileRepositoryTests` (7): ida e volta, conflito de revisão, nome único por pasta, recentes sem mudar revisão, fixar/desafixar, pasta excluída, observação entre "janelas", banco só leitura; migração V2 com dados preservados |
 | W1-T03 Driver SQLite (NST-04-02) | Concluída | `RSKeeperDriverSQLiteTests`: **12/12** verificações de conformidade (nenhuma pulada); NT-DRV-12 (journal e sidecars); WAL sem sidecars em somente leitura; isolamento entre conexões; tipos; redação |
 
 ## Decisões
@@ -28,6 +29,8 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 | W1-D08 | PostgreSQL: instruções que podem devolver linhas usam o `query` assíncrono (contrapressão); as demais, a variante com callback (tag e linhas afetadas) | A PostgresNIO não expõe a tag de comando no `query` assíncrono |
 | W1-D09 | Contrato v1.1: `cancelHandle(for: ExecutionID)`; a sessão manda o `ExecutionID` em toda instrução | DR-18: a alça precisa mirar uma execução. A alça genérica atingia a consulta seguinte (achado do teste de corrida) |
 | W1-D10 | Licenças de código embutido em lista própria (`allowedEmbeddedLicenses`: ISC, OpenSSL), **pendente de confirmação** | BoringSSL dentro de swift-nio-ssl/swift-crypto; premissa da D-W1-2 ("só Apache-2.0 ou MIT") era imprecisa |
+
+| W1-D11 | Migração V2 `pinned_position` no perfil para as conexões **fixadas** da sidebar; fixar e usar não mudam a revisão | A tabela `pin` da V1 é de entidades do explorador; a NST-03-01 pede conexões fixadas. Organização da sidebar não pode invalidar uma edição em outra janela. O repositório de entidades fixadas fica para quando o explorador tiver fixação (fora dos critérios da onda 1) |
 
 ## Achados
 
