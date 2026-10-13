@@ -7,8 +7,9 @@ import XCTest
 /// - A recusa sem o argumento (exit 78) é verificada por `scripts/ci/smoke-guard.sh`: o runner de
 ///   XCUITest não consegue executar o binário com sandbox como processo filho (SIGTRAP em
 ///   `_libsecinit_appsandbox`), e `XCUIApplication.launch()` não aceita um app que encerra ao iniciar.
+@MainActor
 final class LaunchTests: XCTestCase {
-    override func setUp() {
+    override func setUp() async throws {
         continueAfterFailure = false
     }
 
