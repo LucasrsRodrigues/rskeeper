@@ -8,7 +8,7 @@ Os spikes rodaram num repositório **descartável e separado** (`RSKeeper-spikes
 | SPK-N05 | SQLite via GRDB | **APROVADO** | ADR-N16 (SQLite) confirmada; ADR-N21 → opção A | NST-04-02 |
 | SPK-N03 | PostgreSQL via PostgresNIO | **APROVADO com condições** | ADR-N16 (PostgreSQL) confirmada com 6 condições | NST-04-03 (escopo maior) |
 | SPK-N08 | Layout de quatro regiões | **Opção A reprovada**; híbrido recomendado | ADR-N11 → `NSSplitViewController` + SwiftUI | NST-05-01 |
-| SPK-N01 | Editor SQL (TextKit 2) | ver seção abaixo | ADR-N08 | NST-07-01 |
+| SPK-N01 | Editor SQL (TextKit 2) | **APROVADO: alternativa A** (editor próprio) | ADR-N08 → `NSTextView` + TextKit 2 + lexer próprio | NST-07-01 |
 | SPK-N02 | Grade `NSTableView` | **APROVADO condicional** | ADR-N09 mantida, com 4 requisitos | NST-08-01 |
 
 ## SPK-N07 — sandbox e entitlements (APROVADO)
@@ -72,6 +72,35 @@ Medido com 200 colunas: 0 quadros perdidos a 60 Hz; primeira página em 90 ms (m
 - Acessibilidade: a célula leve precisa expor papel e valor manualmente; `accessibilityRowCount()` devolve 0.
 - [INCONCLUSIVO] VoiceOver real e mapa de teclado completo; [A VALIDAR] 120 Hz com Instruments, IME, copiar TSV, reordenar colunas (mapear posição exibida → índice do modelo).
 - Para o SPK-N09: página de 500 × 200 ≈ 4 MB em ~4 ms; pré-busca de ±1 página basta.
+
+## SPK-N01 — editor SQL (alternativa A aprovada)
+
+**ADR-N08 → alternativa A:** editor próprio sobre `NSTextView` com TextKit 2. O realce vem do lexer próprio (`RSKeeperSQLKit`), aplicado como *rendering attributes* (fora do texto e do desfazer) só no viewport. O tree-sitter fica fora do caminho crítico na v1. O CodeEditSourceEditor (B) foi rejeitado.
+
+Medido em 5 MB (173 mil linhas, mistura de dialetos), em CPU da thread principal fora da tela:
+- abrir em 8 ms (28 ms até a primeira tela colorida);
+- tecla com p95 de 2,3 a 7,9 ms;
+- novo realce com p95 de 4,4 a 4,8 ms;
+- 51 MB de memória;
+- `NSTextFinder` nativo: "substituir tudo" em 214 ms, desfeito num passo;
+- desfazer agrupado.
+
+Regras obrigatórias:
+- **Acessibilidade:** a consulta nativa da linha do cursor é O(n) (cerca de 900 ms em 5 MB). Substituir por busca na tabela de linhas (0,003 ms).
+- **Quebra de linha suave como padrão em textos grandes**, sem nunca forçar o layout do documento inteiro. Sem quebra, o TextKit 2 faz o layout de tudo: abrir em 2,46 s, 808 MB, 185 a 450 ms por tecla.
+- Régua de números de linha: 0,46 ms p95, sem cair para TextKit 1. Falta validar na tela.
+
+Rejeições:
+- **Tree-sitter-sql:** o `parser.c` só existe no branch `gh-pages`. A gramática falha em triggers SQLite, `PRAGMA` e `:param`. O reparse custa cerca de 1,4 s por tecla em 5 MB com erros, e 15 ms sem erros. Só é viável até cerca de 1 MB.
+- **CodeEditSourceEditor 0.15.2:**
+  - abrir 5 MB pela API normal leva 568 s;
+  - o realce reaparece 0,85 a 1,1 s depois de cada tecla, e a memória chega a 520 MB;
+  - acima de 1 MB, o app quebra em runtime no Swift 6 por isolamento de thread;
+  - a view não é um `NSTextView`, não usa `NSTextFinder` e tem desfazer próprio;
+  - **duas dependências obrigatórias não declaram licença**, o que bloqueia a adoção;
+  - pesa 4,9 GB de `.build` e 106 MB de executável.
+
+[A VALIDAR] VoiceOver real, busca incremental por XCUITest, régua na tela, autocomplete, modo sem quebra com largura finita e tecla até o pixel com Instruments.
 
 ## Revisão dos contratos da W0-T17/T18 (W0-T32)
 

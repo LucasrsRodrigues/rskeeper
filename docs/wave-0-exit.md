@@ -3,8 +3,9 @@
 **Status: PARCIAL.** As 32 tarefas estão implementadas e a sequência inteira do CI passou localmente. O portão **não** é declarado aprovado por três motivos:
 
 1. O pipeline nunca rodou no GitHub Actions, porque não houve push.
-2. O SPK-N01 ainda não terminou.
-3. Há validações manuais pendentes (seção 3).
+2. Há validações manuais pendentes (seção 3).
+
+Os seis spikes estão concluídos.
 
 Evidência: `scripts/ci/collect-evidence.sh`, execução `20261013-192116`.
 - Commit `5f00962`, árvore limpa, derived data apagado antes.
@@ -21,7 +22,7 @@ Evidência: `scripts/ci/collect-evidence.sh`, execução `20261013-192116`.
 | 4 | Auditoria de licenças ativa; `Package.resolved` versionado com versões exatas | **OK** | `license-audit: OK (1 dependência)` (GRDB 7.11.1, MIT); uma pin desconhecida é reprovada |
 | 5 | Janela Conexões e workspace vazio; sem rede no boot; sem arquivos fora da raiz e da allowlist | **OK**, com limite (§3) | XCUITest; `footprint: OK 0 conexões de rede`; raiz 0700 |
 | 6 | Artefato ad hoc com Hardened Runtime (`codesign -dv`) e entitlements = allowlist | **OK** | `flags=0x10002(adhoc,runtime)`; 4 entitlements na variante com sandbox, nenhum na direta; sem `get-task-allow` |
-| 7 | SPK-N07 e N05 concluídos, com ADR-N07 e N21 atualizadas; N03, N08, N01 e N02 com status explícito | **Parcial**: N01 em andamento | [spikes/README.md](spikes/README.md), [ADR-INDEX.md](ADR-INDEX.md) |
+| 7 | SPK-N07 e N05 concluídos, com ADR-N07 e N21 atualizadas; N03, N08, N01 e N02 com status explícito | **OK**: os seis concluídos | [spikes/README.md](spikes/README.md), [ADR-INDEX.md](ADR-INDEX.md) |
 | 8 | Nenhum ativo do Beekeeper (higiene verde) | **OK** | `hygiene: OK`; uma violação injetada é reprovada |
 
 Contratos da T17/T18 revisados à luz dos SPK-N03/N05: contrato v1 com `BoundStatement.executionID` (tabela em [spikes/README.md](spikes/README.md#revisão-dos-contratos-da-w0-t17t18-w0-t32)).
@@ -68,7 +69,7 @@ O app (`App/`) não entra nessa medição; ele é coberto pelos XCUITests.
 | ID | Pendência | Impacto | Próximo passo |
 |---|---|---|---|
 | P-01 | O CI nunca rodou no GitHub (sem push autorizado). Não foram validados o runner `macos-26` e o caminho `/Applications/Xcode_27.0.app` | Os scripts são os mesmos e passam localmente; o YAML não foi exercitado | Push autorizado → primeira execução → ajustar runner e Xcode |
-| P-02 | SPK-N01 (editor TextKit 2) em andamento | ADR-N08 sem veredito; não afeta a onda 0 | Integrar o relatório |
+| P-02 | ~~SPK-N01 em andamento~~ **Resolvida:** alternativa A aprovada | — | — |
 | P-03 | `fs-footprint` só detecta caminhos **novos** com "rskeeper" no nome, até profundidade 4 em `~/Library`; escritas em arquivos já existentes não são vistas | Cobertura parcial do item 5 | Ampliar com `fs_usage` ou Endpoint Security na onda 1 |
 | P-04 | Validações manuais: VoiceOver, host macOS 26.0 exato (só 26.6.2 testado), Intel (D-N8), prompts do Keychain em runner de CI (R-W0-03) | Fora do alcance não interativo | Checklist manual antes do portão da onda 1 |
 | P-05 | As referências de snapshot dependem da máquina (fontes e versão do SO) | Podem divergir em outro host | Regravar com `RSK_RECORD_SNAPSHOTS=1` no runner de referência |
@@ -85,4 +86,4 @@ Desbloqueadas:
 - **NST-08-01:** grade com 4 requisitos (SPK-N02).
 - **NST-03-03** e **NST-10-04:** sandbox (SPK-N07).
 
-A **NST-07-01** aguarda o SPK-N01. O job de drivers em containers já está definido no CI e deve ser ativado junto com a NST-04-02/03.
+A **NST-07-01** também fica desbloqueada: editor próprio em TextKit 2 (SPK-N01). O job de drivers em containers já está definido no CI e deve ser ativado junto com a NST-04-02/03.

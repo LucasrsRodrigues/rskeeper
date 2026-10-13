@@ -63,7 +63,7 @@ Resumo e regras em [spikes/README.md](spikes/README.md).
 | SPK-N05 | Concluído | APROVADO — GRDB 7.11.1; ADR-N21 opção A |
 | SPK-N03 | Concluído | APROVADO com condições — PostgresNIO 1.33.1 só como transporte |
 | SPK-N08 | Concluído | Opção A reprovada; híbrido aprovado (ADR-N11) |
-| SPK-N01 | Em andamento | — |
+| SPK-N01 | Concluído | APROVADO — alternativa A (TextKit 2 próprio); tree-sitter e CodeEditSourceEditor rejeitados |
 | SPK-N02 | Concluído | APROVADO condicional — `NSTableView` com 4 requisitos; SwiftUI `Table` rejeitada |
 
 ## Inconsistências do plano encontradas
