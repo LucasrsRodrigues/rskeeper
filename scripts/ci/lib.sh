@@ -24,3 +24,20 @@ rsk_check_warnings() {
   fi
   echo "ci: zero avisos em fontes próprias ($(basename "$log"))"
 }
+
+# R-W0-03: no runner próprio (LaunchAgent com SessionCreate), o processo roda numa sessão de segurança
+# separada e o keychain de login não é acessível (-25308). Cria um keychain TEMPORÁRIO e o define como
+# padrão só no domínio "dynamic" — que é por sessão de segurança —, sem tocar nas preferências do
+# usuário nem no keychain de login. Só roda dentro do GitHub Actions; apagado ao sair.
+rsk_ci_keychain() {
+  [[ "${GITHUB_ACTIONS:-}" == "true" && -n "${RUNNER_TEMP:-}" ]] || return 0
+  RSK_CI_KEYCHAIN="$RUNNER_TEMP/rskeeper-ci-$$.keychain-db"
+  local pass; pass="$(uuidgen)"
+  security create-keychain -p "$pass" "$RSK_CI_KEYCHAIN"
+  security set-keychain-settings "$RSK_CI_KEYCHAIN"          # sem bloqueio por tempo
+  security unlock-keychain -p "$pass" "$RSK_CI_KEYCHAIN"
+  security list-keychains -d dynamic -s "$RSK_CI_KEYCHAIN"
+  security default-keychain -d dynamic -s "$RSK_CI_KEYCHAIN"
+  trap 'security delete-keychain "$RSK_CI_KEYCHAIN" 2>/dev/null || true' EXIT
+  echo "ci: keychain temporário da sessão do runner ($(basename "$RSK_CI_KEYCHAIN"))"
+}
