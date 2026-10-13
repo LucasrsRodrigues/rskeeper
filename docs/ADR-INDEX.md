@@ -34,7 +34,7 @@ Os vereditos dos spikes e as regras que eles impõem estão em [spikes/README.md
 | ADR-N06 | Segredos no Keychain |
 | ADR-N07 | App Sandbox **ligado** (SPK-N07 APROVADO, variante A) + Hardened Runtime + security-scoped bookmarks; keychain baseado em arquivo |
 | ADR-N08 | Editor SQL (decidido pelo SPK-N01) |
-| ADR-N09 | Data grid em `NSTableView` |
+| ADR-N09 | Data grid em `NSTableView` view-based (SPK-N02 APROVADO condicional: virtualização horizontal, célula leve, camada por linha, sem grade vertical) |
 | ADR-N10 | Árvore de schemas em `NSOutlineView` |
 | ADR-N11 | Layout **híbrido**: `NSSplitViewController` + painéis SwiftUI (SPK-N08 reprovou `NavigationSplitView` + `.inspector`) |
 | ADR-N12 | Barra de abas própria em SwiftUI |

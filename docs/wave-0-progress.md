@@ -64,7 +64,7 @@ Resumo e regras em [spikes/README.md](spikes/README.md).
 | SPK-N03 | Concluído | APROVADO com condições — PostgresNIO 1.33.1 só como transporte |
 | SPK-N08 | Concluído | Opção A reprovada; híbrido aprovado (ADR-N11) |
 | SPK-N01 | Em andamento | — |
-| SPK-N02 | Em andamento | — |
+| SPK-N02 | Concluído | APROVADO condicional — `NSTableView` com 4 requisitos; SwiftUI `Table` rejeitada |
 
 ## Inconsistências do plano encontradas
 

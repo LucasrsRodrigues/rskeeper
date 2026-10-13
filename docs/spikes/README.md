@@ -9,7 +9,7 @@ Os spikes rodaram num repositório **descartável e separado** (`RSKeeper-spikes
 | SPK-N03 | PostgreSQL via PostgresNIO | **APROVADO com condições** | ADR-N16 (PostgreSQL) confirmada com 6 condições | NST-04-03 (escopo maior) |
 | SPK-N08 | Layout de quatro regiões | **Opção A reprovada**; híbrido recomendado | ADR-N11 → `NSSplitViewController` + SwiftUI | NST-05-01 |
 | SPK-N01 | Editor SQL (TextKit 2) | ver seção abaixo | ADR-N08 | NST-07-01 |
-| SPK-N02 | Grade `NSTableView` | ver seção abaixo | ADR-N09 | NST-08-01 |
+| SPK-N02 | Grade `NSTableView` | **APROVADO condicional** | ADR-N09 mantida, com 4 requisitos | NST-08-01 |
 
 ## SPK-N07 — sandbox e entitlements (APROVADO)
 
@@ -55,6 +55,23 @@ TLS: mínimo TLS 1.2; regra de SNI (DNS → host; IP → `tlsServerName = nil`; 
 - Medido no protótipo: 0 avisos de layout, ordem de Tab correta, persistência exata das larguras, redimensionamento com p95 de 5,6 ms por passo (proxy de 60 fps).
 - [A VALIDAR] arrasto real com mouse, live resize pela borda, frame pacing com Instruments, várias janelas com autosave.
 - A W0-T29 não usa o layout (workspace vazio), então a onda 0 não é afetada; a NST-05-01 (onda 1) parte do híbrido.
+
+## SPK-N02 — grade `NSTableView` (APROVADO condicional)
+
+`NSTableView` view-based dentro de SwiftUI aguenta 1.000.000 de linhas × 200 colunas, **desde que** o driver da grade cumpra quatro requisitos (emendas à ADR-N09). A versão ingênua reprova (1,2 s até a primeira página).
+
+1. **Virtualização horizontal manual:** o delegate devolve `nil` para colunas fora da área visível ±1 e recarrega só as colunas que entram ou saem. O `NSTableView` cria por padrão uma view para cada coluna de cada linha visível.
+2. **Célula leve** que desenha a string; `NSTextField` só durante a edição, iniciada por `makeFirstResponder` (o `editColumn` não inicia com a célula leve).
+3. **Uma camada por linha** (`canDrawSubviewsIntoLayer = true` no `NSTableRowView`).
+4. **Proibido:** `gridStyleMask` vertical (layout O(n²), quadros de 70–80 ms). **Obrigatório:** `sizeThatFits` no `NSViewRepresentable`.
+
+Medido com 200 colunas: 0 quadros perdidos a 60 Hz; primeira página em 90 ms (meta 100, no limite); pico de 288 MB com cache LRU de 128 MB (meta 300, no limite; a meta "teto do cache + 20 MB" do doc 09 §4 **não** foi atingida e precisa ser recalibrada); 689 views criadas no total; seleção de 500 mil linhas em 24 ms.
+
+- SwiftUI `Table` **rejeitada** (5,5 s e 955 MB para 1M × 200; ~25 fps); cell-based também (~10 fps).
+- Teclado: só ↑/↓ nativos funcionam como esperado → mapa de teclado próprio (09 §3.6).
+- Acessibilidade: a célula leve precisa expor papel e valor manualmente; `accessibilityRowCount()` devolve 0.
+- [INCONCLUSIVO] VoiceOver real e mapa de teclado completo; [A VALIDAR] 120 Hz com Instruments, IME, copiar TSV, reordenar colunas (mapear posição exibida → índice do modelo).
+- Para o SPK-N09: página de 500 × 200 ≈ 4 MB em ~4 ms; pré-busca de ±1 página basta.
 
 ## Revisão dos contratos da W0-T17/T18 (W0-T32)
 
