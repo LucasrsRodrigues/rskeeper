@@ -2,7 +2,8 @@ import RSKeeperDomain
 
 /// Modo de cancelamento (DR-29; docs/native/04 §2.1).
 public enum CancelMode: String, Hashable, Sendable {
-    /// Pedido ao servidor por outra conexão; sessão e transação continuam.
+    /// Pedido ao servidor por outra conexão; sessão e transação continuam. O driver garante que o
+    /// pedido atinja só a execução alvo (SPK-N03: guarda por marcador; nunca depender de `Task.cancel()`).
     case server
     /// Interrupção no próprio processo (`sqlite3_interrupt`); a conexão continua utilizável.
     case interrupt

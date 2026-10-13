@@ -39,9 +39,14 @@ public enum BindValue: Hashable, Sendable {
 public struct BoundStatement: Sendable {
     public let sql: String
     public let bindings: [BindValue]
-    public init(sql: String, bindings: [BindValue] = []) {
+    /// Execução de origem. Drivers com cancelamento `.server` guardado usam isto para marcar a
+    /// instrução e cancelar só ela (revisão de contrato v1, SPK-N03: `pg_cancel_backend` guardado
+    /// por `/*rsk:exec=<id>*/`). `nil` em instruções internas (metadados, sondas).
+    public let executionID: ExecutionID?
+    public init(sql: String, bindings: [BindValue] = [], executionID: ExecutionID? = nil) {
         self.sql = sql
         self.bindings = bindings
+        self.executionID = executionID
     }
 }
 
@@ -119,6 +124,9 @@ public enum StatementOutcome: Sendable {
 public enum TransactionState: String, Hashable, Sendable { case idle, inTransaction, failed }
 
 /// Alça de cancelamento de uma execução em curso (DR-18/29).
+///
+/// SPK-N05: no SQLite, o cancelamento da `Task` já chega a `sqlite3_interrupt` pelo GRDB; o handle
+/// serve a prazos e a "cancelar tudo". Depois de `.cancelled`, o chamador consulta `transactionState()`.
 public protocol CancelHandle: Sendable {
     func cancel() async
 }

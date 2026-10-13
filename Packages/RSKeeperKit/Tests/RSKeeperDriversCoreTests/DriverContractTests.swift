@@ -106,3 +106,14 @@ struct DriverContractTests {
         #expect(!CancelMode.server.discardsTransaction)
     }
 }
+
+/// Revisão de contrato v1 (W0-T32, SPK-N03): a execução de origem chega ao driver.
+@Suite("Contrato v1 (W0-T32)")
+struct ContractRevisionTests {
+    @Test("BoundStatement carrega o ExecutionID opcional; o padrão é nil")
+    func boundStatementCarriesExecutionID() {
+        let id = ExecutionID.generate()
+        #expect(BoundStatement(sql: "SELECT 1", executionID: id).executionID == id)
+        #expect(BoundStatement(sql: "SELECT 1").executionID == nil)
+    }
+}
