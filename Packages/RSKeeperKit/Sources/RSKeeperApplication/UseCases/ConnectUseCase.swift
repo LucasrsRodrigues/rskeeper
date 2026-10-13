@@ -51,6 +51,8 @@ public struct ConnectUseCase: Sendable {
         if Task.isCancelled { throw .cancelled }
         let target = try await resolver.resolve(profile)
         let options = OpenOptions(readOnly: profile.readOnly, tls: profile.tls)
-        return try await sessions.open(window: window, profileID: profile.id, factory: factory, target: target, options: options)
+        let policy = OperationPolicyContext(environment: profile.environment, readOnly: profile.readOnly, targetName: profile.name)
+        return try await sessions.open(window: window, profileID: profile.id, factory: factory, target: target, options: options,
+                                       policy: policy)
     }
 }

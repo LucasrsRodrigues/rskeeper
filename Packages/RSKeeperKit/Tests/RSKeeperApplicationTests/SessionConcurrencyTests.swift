@@ -7,7 +7,7 @@ import RSKeeperTesting
 private let target = ResolvedTarget.server(host: "memoria", port: 1, user: nil, password: nil, database: nil)
 
 private func openSession(_ registry: SessionRegistry, window: WindowID, driver: InMemoryDriver) async throws -> DatabaseSession {
-    let id = try await registry.open(window: window, profileID: .generate(), factory: driver, target: target)
+    let id = try await registry.open(window: window, profileID: .generate(), factory: driver, target: target, policy: .init(environment: .local, readOnly: false, targetName: "teste"))
     return try await registry.session(id, for: window)
 }
 
@@ -77,7 +77,7 @@ struct SessionConcurrencyTests {
         let registry = SessionRegistry()
         let windowA = WindowID.generate()
         let windowB = WindowID.generate()
-        let id = try await registry.open(window: windowA, profileID: .generate(), factory: InMemoryDriver(), target: target)
+        let id = try await registry.open(window: windowA, profileID: .generate(), factory: InMemoryDriver(), target: target, policy: .init(environment: .local, readOnly: false, targetName: "teste"))
         await #expect(throws: RSKeeperError.notFound(.otherWindow)) { _ = try await registry.session(id, for: windowB) }
         #expect(await registry.sessions(of: windowB).isEmpty)
         await registry.closeWindow(windowB)                                   // não afeta A
@@ -114,7 +114,7 @@ struct SessionConcurrencyTests {
         let registry = SessionRegistry()
         let driver = InMemoryDriver(script: .init(failOpen: .authentication))
         await #expect(throws: RSKeeperError.self) {
-            _ = try await registry.open(window: .generate(), profileID: .generate(), factory: driver, target: target)
+            _ = try await registry.open(window: .generate(), profileID: .generate(), factory: driver, target: target, policy: .init(environment: .local, readOnly: false, targetName: "teste"))
         }
         #expect(await registry.openSessionCount == 0)
     }

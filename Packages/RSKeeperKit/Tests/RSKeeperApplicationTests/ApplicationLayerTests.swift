@@ -124,7 +124,8 @@ struct ApplicationLayerTests {
         let window = WindowID.generate()
         let id = try await sessions.open(window: window, profileID: .generate(),
                                          factory: InMemoryDriver(script: .init(delay: .milliseconds(150)), log: log),
-                                         target: .server(host: "m", port: 1, user: nil, password: nil, database: nil))
+                                         target: .server(host: "m", port: 1, user: nil, password: nil, database: nil),
+                                         policy: .init(environment: .local, readOnly: false, targetName: "teste"))
         let session = try await sessions.session(id, for: window)
         let tab = TabID.generate()
 

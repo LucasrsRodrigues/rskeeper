@@ -107,7 +107,7 @@ public struct ExecuteQueryUseCase: Sendable {
 
     /// Executa o plano na aba (uma execução por aba; para na primeira falha).
     public func run(_ plan: ExecutionPlan, session: DatabaseSession, tab: TabID, executionID: ExecutionID,
-                    limits: ReadLimits = .default) async throws(RSKeeperError) -> ScriptOutcome {
-        try await session.executeScript(plan.statements, tab: tab, executionID: executionID, limits: limits)
+                    limits: ReadLimits = .default, confirmation: ConfirmationToken? = nil) async throws(RSKeeperError) -> ScriptOutcome {
+        try await session.executeScript(plan.statements, tab: tab, executionID: executionID, limits: limits, confirmation: confirmation)
     }
 }

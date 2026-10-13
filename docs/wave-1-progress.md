@@ -12,6 +12,7 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 | W1-T05 PostgreSQL de teste e job de drivers | Concluída | `scripts/ci/pg-test.sh`, `scripts/ci/test-drivers.sh` (falha se uma suíte de driver for pulada); job `drivers-containers` ativado no CI |
 | W1-T06 Repositórios de perfis, pastas e fixadas (NST-02-03) | Concluída | `ProfileRepositoryTests` (7): ida e volta, conflito de revisão, nome único por pasta, recentes sem mudar revisão, fixar/desafixar, pasta excluída, observação entre "janelas", banco só leitura; migração V2 com dados preservados |
 | W1-T07 Executar e cancelar (NST-07-02) | Concluída | `ExecuteQueryTests` (6, com SQLite real): NT-DRV-09 (falha na 2ª de 3), BEGIN…COMMIT/ROLLBACK e ROLLBACK TO, Auto desfaz BEGIN aberto com aviso, DR-06, busy na mesma aba, cancelamento ≤ 1 s pela sessão; plano (atual, seleção, parâmetros, somente leitura, COPY) |
+| W1-T08 Confirmação de risco (NST-07-04, ampliada) | Concluída | `PolicyTests`: matriz DR-11 (18 casos), ambientes não produtivos, contornos por comentário/caixa/CTE; token na sessão com SQLite real: sem token recusa, uso único, outra aba, outro digest (instrução e parâmetro), expiração, nome digitado em produção, somente leitura |
 | W1-T03 Driver SQLite (NST-04-02) | Concluída | `RSKeeperDriverSQLiteTests`: **12/12** verificações de conformidade (nenhuma pulada); NT-DRV-12 (journal e sidecars); WAL sem sidecars em somente leitura; isolamento entre conexões; tipos; redação |
 
 ## Decisões
@@ -35,6 +36,8 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 
 | W1-D12 | Scripts rodam numa única conexão; `committed` decidido pelo estado real de transação, resolvido quando a transação fecha (COMMIT efetiva, ROLLBACK desfaz) | DR-13: "o que foi efetivado" precisa ser verdade, inclusive com BEGIN/COMMIT dentro do script |
 | W1-D13 | `PlaceholderStyle` do SQLKit renomeado para `SQLPlaceholderStyle` | Os enums marcadores com o nome do módulo impedem qualificar `Módulo.Tipo`; os dois tipos eram nossos |
+
+| W1-D14 | `SessionRegistry.open` exige `policy:`; a política é reaplicada em `executeScript` | Nenhum chamador pode esquecer o ambiente de produção; contornar a UI não basta. `execute` (instrução única) fica para leituras internas (páginas, metadados) e não passa pela política — risco registrado |
 
 ## Achados
 

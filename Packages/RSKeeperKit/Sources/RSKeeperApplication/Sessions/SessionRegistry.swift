@@ -9,6 +9,9 @@ public actor SessionRegistry {
     public struct Limits: Sendable {
         public var maxConnectionsPerSession: Int
         public var finishedExecutionsRemembered: Int
+        /// Validade do token de confirmação [META 60 s].
+        public var confirmationLifetime: Duration = .seconds(60)
+
         public init(maxConnectionsPerSession: Int = 4, finishedExecutionsRemembered: Int = 1_000) {
             self.maxConnectionsPerSession = maxConnectionsPerSession
             self.finishedExecutionsRemembered = finishedExecutionsRemembered
@@ -21,12 +24,14 @@ public actor SessionRegistry {
     public init(limits: Limits = Limits()) { self.limits = limits }
 
     /// Abre uma sessão para a janela. Falha de conexão não deixa sessão registrada.
+    /// `policy` é obrigatório: nenhum chamador pode esquecer o ambiente de produção (NST-07-04).
     public func open(window: WindowID, profileID: ProfileID, factory: any DriverFactory, target: ResolvedTarget,
-                     options: OpenOptions = OpenOptions()) async throws(RSKeeperError) -> SessionID {
+                     options: OpenOptions = OpenOptions(), policy: OperationPolicyContext) async throws(RSKeeperError) -> SessionID {
         let id = SessionID.generate()
         let session = DatabaseSession(id: id, window: window, profileID: profileID, factory: factory, target: target,
                                       options: options, maxConnections: limits.maxConnectionsPerSession,
-                                      finishedCapacity: limits.finishedExecutionsRemembered)
+                                      finishedCapacity: limits.finishedExecutionsRemembered,
+                                      policy: policy, confirmationLifetime: limits.confirmationLifetime)
         try await session.connect()
         sessions[id] = session
         return id

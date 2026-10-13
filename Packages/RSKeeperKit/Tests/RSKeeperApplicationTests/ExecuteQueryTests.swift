@@ -14,7 +14,8 @@ struct ExecuteQueryTests {
         let session: DatabaseSession
         let tab = TabID.generate()
 
-        static func make(maxConnections: Int = 4) async throws -> SQLiteBox {
+        static func make(maxConnections: Int = 4,
+                         policy: OperationPolicyContext = .init(environment: .local, readOnly: false, targetName: "teste")) async throws -> SQLiteBox {
             let directory = FileManager.default.temporaryDirectory.appendingPathComponent("rsk-exec-\(UUID().uuidString)")
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let path = directory.appendingPathComponent("t.db").path
@@ -22,7 +23,8 @@ struct ExecuteQueryTests {
             let registry = SessionRegistry(limits: .init(maxConnectionsPerSession: maxConnections))
             let window = WindowID.generate()
             let id = try await registry.open(window: window, profileID: ProfileID.generate(), factory: SQLiteDriver(),
-                                             target: .file(path: path, readOnly: false), options: OpenOptions())
+                                             target: .file(path: path, readOnly: false), options: OpenOptions(),
+                                             policy: policy)
             return SQLiteBox(directory: directory, session: try await registry.session(id, for: window))
         }
 

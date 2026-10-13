@@ -1,3 +1,5 @@
+import CryptoKit
+import Foundation
 import RSKeeperDomain
 import RSKeeperDriversCore
 
@@ -17,6 +19,11 @@ public actor DatabaseSession {
     private let target: ResolvedTarget
     private let options: OpenOptions
     private let maxConnections: Int
+    /// Política fixada na abertura a partir do perfil (NST-07-04): a sessão a reaplica antes de executar.
+    public nonisolated let policy: OperationPolicyContext
+    private let policyEngine = OperationPolicyEngine()
+    private let confirmationLifetime: Duration
+    private var confirmations: [ConfirmationToken: IssuedConfirmation] = [:]
 
     private var idle: [any PhysicalConnection] = []
     private var openCount = 0
@@ -30,7 +37,10 @@ public actor DatabaseSession {
     private var closed = false
 
     init(id: SessionID, window: WindowID, profileID: ProfileID, factory: any DriverFactory,
-         target: ResolvedTarget, options: OpenOptions, maxConnections: Int, finishedCapacity: Int) {
+         target: ResolvedTarget, options: OpenOptions, maxConnections: Int, finishedCapacity: Int,
+         policy: OperationPolicyContext, confirmationLifetime: Duration) {
+        self.policy = policy
+        self.confirmationLifetime = confirmationLifetime
         self.id = id
         self.window = window
         self.profileID = profileID
@@ -113,12 +123,21 @@ public actor DatabaseSession {
     /// - Em modo Auto, uma transação deixada aberta pelo script é desfeita na devolução, com aviso.
     /// - Repetir o mesmo `ExecutionID` devolve o desfecho registrado, sem reexecutar (DR-06).
     public func executeScript(_ statements: [PlannedStatement], tab: TabID, executionID: ExecutionID,
-                              limits: ReadLimits = .default) async throws(RSKeeperError) -> ScriptOutcome {
+                              limits: ReadLimits = .default,
+                              confirmation: ConfirmationToken? = nil) async throws(RSKeeperError) -> ScriptOutcome {
         guard !closed else { throw .notFound(.unknown) }
         if let previous = finishedScripts[executionID] { return previous }
         guard running[executionID] == nil else { throw .conflict(.duplicateID) }
         guard !statements.isEmpty else { throw .validation(RedactedMessage(alreadyRedacted: "Nenhuma instrução para executar.")) }
         guard !busyTabs.contains(tab) else { throw .conflict(.busy) }               // DR-20
+        // NST-07-04: a política vale mesmo que a UI seja contornada.
+        switch policyEngine.evaluate(statements.map(\.risk), context: policy) {
+        case .allow: break
+        case .deny(let error): throw error
+        case .confirm:
+            guard let confirmation else { throw .confirmationRequired }
+            try consume(confirmation, tab: tab, operation: .execute, digest: Self.digest(statements))
+        }
         busyTabs.insert(tab)
         defer { busyTabs.remove(tab) }
 
@@ -203,6 +222,56 @@ public actor DatabaseSession {
         let result = ScriptOutcome(reports: reports, outcomes: outcomes, autoRolledBackTransaction: rolledBack)
         rememberScript(executionID, result)
         return result
+    }
+
+    // MARK: Confirmação de risco (NST-07-04; DR-14)
+
+    /// Decisão da política para estas instruções (a UI usa para mostrar a confirmação).
+    public func evaluate(_ statements: [PlannedStatement]) -> PolicyDecision {
+        policyEngine.evaluate(statements.map(\.risk), context: policy)
+    }
+
+    /// Emite um token de uso único para **estas** instruções e parâmetros, nesta aba, válido por
+    /// `confirmationLifetime` [META 60 s]. Em produção, exige o nome do alvo digitado exatamente.
+    public func confirm(_ statements: [PlannedStatement], tab: TabID, typedTargetName: String? = nil) throws(RSKeeperError) -> ConfirmationToken {
+        guard !closed else { throw .notFound(.unknown) }
+        switch policyEngine.evaluate(statements.map(\.risk), context: policy) {
+        case .allow:
+            throw .validation(RedactedMessage(alreadyRedacted: "Estas instruções não precisam de confirmação."))
+        case .deny(let error):
+            throw error
+        case .confirm(let requirement):
+            if let expected = requirement.mustTypeTargetName, typedTargetName != expected {
+                throw .validation(RedactedMessage(alreadyRedacted: "O nome digitado não confere."))
+            }
+        }
+        let token = ConfirmationToken()
+        confirmations[token] = IssuedConfirmation(tab: tab, operation: .execute, digest: Self.digest(statements),
+                                                  expires: ContinuousClock.now + confirmationLifetime)
+        return token
+    }
+
+    /// Consumo atômico (o actor serializa): uso único, mesma aba, mesma operação, mesmo digest, dentro do prazo.
+    private func consume(_ token: ConfirmationToken, tab: TabID, operation: OperationKind, digest: [UInt8]) throws(RSKeeperError) {
+        guard let issued = confirmations.removeValue(forKey: token) else { throw .confirmationRequired }
+        guard issued.expires > ContinuousClock.now, issued.tab == tab, issued.operation == operation, issued.digest == digest else {
+            throw .confirmationRequired
+        }
+    }
+
+    /// SHA-256 das instruções efetivamente selecionadas e dos parâmetros (03 §4.3).
+    static func digest(_ statements: [PlannedStatement]) -> [UInt8] {
+        var hasher = SHA256()
+        for planned in statements {
+            hasher.update(data: Data(planned.statement.sql.utf8))
+            hasher.update(data: Data([0]))
+            for binding in planned.statement.bindings {
+                hasher.update(data: Data(String(describing: binding).utf8))
+                hasher.update(data: Data([1]))
+            }
+            hasher.update(data: Data([2]))
+        }
+        return Array(hasher.finalize())
     }
 
     /// `ROLLBACK`/`ABORT` encerram desfazendo; `ROLLBACK TO SAVEPOINT` não encerra a transação.
@@ -359,4 +428,12 @@ public actor DatabaseSession {
             finishedScripts[evicted] = nil
         }
     }
+}
+
+/// Token emitido e ainda não consumido.
+struct IssuedConfirmation: Sendable {
+    let tab: TabID
+    let operation: OperationKind
+    let digest: [UInt8]
+    let expires: ContinuousClock.Instant
 }
