@@ -5,3 +5,8 @@ GENERATE_INFOPLIST_FILE = YES
 TEST_TARGET_NAME = RSKeeper
 CODE_SIGN_ENTITLEMENTS =
 LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/../Frameworks @loader_path/../Frameworks
+// O runner de XCUITest carrega este bundle; com Hardened Runtime + assinatura ad hoc a validação de
+// bibliotecas recusa o carregamento ("different Team IDs"). Alvo só de teste, nunca distribuído:
+// Hardened Runtime desligado AQUI (o app continua com Hardened Runtime em todas as configurações).
+ENABLE_HARDENED_RUNTIME = NO
+OTHER_CODE_SIGN_FLAGS =

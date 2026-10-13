@@ -23,6 +23,5 @@ struct ConnectionsWindowView: View {
         }
         .frame(minWidth: 640, minHeight: 420)
         .background(Color.rk(.surfaceWindow))
-        .accessibilityIdentifier(AccessibilityID.connectionsWindow)
     }
 }
