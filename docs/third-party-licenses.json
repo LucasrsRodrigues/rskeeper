@@ -1,0 +1,13 @@
+{
+  "comment": "Registro de dependências de terceiros (W0-T22/T16; NT-SEC-17). Toda pin do Package.resolved precisa estar aqui, com a mesma versão e licença na allowlist.",
+  "allowedLicenses": ["MIT", "BSD-2-Clause", "BSD-3-Clause", "Apache-2.0", "ISC"],
+  "dependencies": {
+    "grdb.swift": {
+      "version": "7.11.1",
+      "license": "MIT",
+      "url": "https://github.com/groue/GRDB.swift",
+      "usedBy": ["RSKeeperPersistence"],
+      "evidence": "LICENSE do checkout (texto MIT) e GitHub API, verificados em 2026-10-13; SPK-N05"
+    }
+  }
+}

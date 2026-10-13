@@ -43,6 +43,10 @@ let package = Package(
         .library(name: "RSKeeperFeatures", targets: ["RSKeeperFeatures"]),
         .library(name: "RSKeeperTesting", targets: ["RSKeeperTesting"]),
     ],
+    dependencies: [
+        // GRDB.swift 7.11.1 — MIT. Versão EXATA (README §7; confirmada no SPK-N05).
+        .package(url: "https://github.com/groue/GRDB.swift.git", exact: "7.11.1"),
+    ],
     targets: [
         // MARK: Núcleo não visual
 
@@ -63,7 +67,11 @@ let package = Package(
         // Banco local (GRDB entra na W0-T22), migrações e repositórios.
         .target(
             name: "RSKeeperPersistence",
-            dependencies: ["RSKeeperDomain", "RSKeeperSecurity"]
+            dependencies: [
+                "RSKeeperDomain",
+                "RSKeeperSecurity",
+                .product(name: "GRDB", package: "GRDB.swift"),
+            ]
         ),
         // Protocolos de driver, capacidades e tipos de resultado.
         .target(
@@ -136,7 +144,11 @@ let package = Package(
         ),
         .testTarget(
             name: "RSKeeperPersistenceTests",
-            dependencies: ["RSKeeperPersistence", "RSKeeperTesting"]
+            dependencies: [
+                "RSKeeperPersistence",
+                "RSKeeperTesting",
+                .product(name: "GRDB", package: "GRDB.swift"),
+            ]
         ),
         .testTarget(
             name: "RSKeeperDriversCoreTests",
