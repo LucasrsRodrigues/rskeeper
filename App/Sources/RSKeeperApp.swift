@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Ponto de entrada do RSKeeper (W0-T08: janela vazia mínima).
-@main
+/// Aplicação SwiftUI (iniciada por `RSKeeperMain` depois da guarda de ambiente).
 struct RSKeeperApp: App {
     var body: some Scene {
         WindowGroup {
