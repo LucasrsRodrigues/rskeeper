@@ -36,6 +36,12 @@ while IFS='|' read -r identity version; do
   if ! jq -e --arg l "$license" '.allowedLicenses | index($l)' "$registry" > /dev/null; then
     echo "license-audit: VIOLAÇÃO: $identity com licença $license fora da allowlist" >&2; status=1
   fi
+  # Código embutido com licença própria (ex.: BoringSSL): cada licença precisa estar na lista própria.
+  for embedded in $(echo "$entry" | jq -r '.embeddedLicenses // [] | .[]'); do
+    if ! jq -e --arg l "$embedded" '(.allowedEmbeddedLicenses // []) | index($l)' "$registry" > /dev/null; then
+      echo "license-audit: VIOLAÇÃO: $identity embute código $embedded fora de allowedEmbeddedLicenses" >&2; status=1
+    fi
+  done
   # Sem checkout (runner limpo), a comparação de texto é pulada; pipefail não pode abortar o script.
   checkout="$( { ls -d "$pkg"/.build/checkouts/* 2>/dev/null || true; } | while read -r c; do
     if [ "$(basename "$c" | tr 'A-Z' 'a-z')" = "$identity" ]; then echo "$c"; fi; done | head -1)"

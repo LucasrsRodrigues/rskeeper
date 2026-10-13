@@ -41,6 +41,12 @@ extension PhysicalConnection {
     }
 }
 
+extension PhysicalConnection {
+    /// Drivers cujo cancelamento não pode atingir outra execução (SQLite: `interrupt` só age no
+    /// passo em curso da própria conexão serial) usam a alça geral.
+    public func cancelHandle(for executionID: ExecutionID) -> (any CancelHandle)? { cancelHandle() }
+}
+
 extension StatementOutcome {
     /// Consome um stream inteiro e devolve o desfecho com um único lote.
     public static func collect(_ stream: ResultStream) async throws(DriverError) -> StatementOutcome {

@@ -48,7 +48,7 @@ jobs:
       - run: scripts/ci/test-kit.sh
 
   boundaries:
-    needs: test-kit
+    needs: [test-kit, drivers-containers]
     runs-on: [self-hosted, macOS, ARM64, rskeeper-xcode27]
     steps:
       - uses: actions/checkout@v4
@@ -104,10 +104,11 @@ jobs:
           path: dist/RSKeeper-wave0-adhoc-sbYES.zip
           retention-days: 14
 
-  # NST-00-04 crit. 2 (I-2): definido e DESABILITADO até a onda 1 (NST-04-02/03).
+  # NST-00-04 crit. 2 (W1-T05): drivers contra bancos reais e descartáveis (Docker do runner próprio).
   drivers-containers:
-    if: ${{ false }}
     needs: test-kit
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64, rskeeper-xcode27]
     steps:
-      - run: echo "Ativado na onda 1 com os drivers SQLite e PostgreSQL."
+      - uses: actions/checkout@v4
+      - run: scripts/ci/select-xcode.sh   # Xcode de .xcode-version → DEVELOPER_DIR
+      - run: scripts/ci/test-drivers.sh

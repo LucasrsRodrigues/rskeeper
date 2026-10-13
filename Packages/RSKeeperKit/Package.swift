@@ -37,6 +37,7 @@ let package = Package(
         .library(name: "RSKeeperPersistence", targets: ["RSKeeperPersistence"]),
         .library(name: "RSKeeperDriversCore", targets: ["RSKeeperDriversCore"]),
         .library(name: "RSKeeperDriverSQLite", targets: ["RSKeeperDriverSQLite"]),
+        .library(name: "RSKeeperDriverPostgreSQL", targets: ["RSKeeperDriverPostgreSQL"]),
         .library(name: "RSKeeperApplication", targets: ["RSKeeperApplication"]),
         .library(name: "RSKeeperDesignSystem", targets: ["RSKeeperDesignSystem"]),
         .library(name: "RSKeeperSQLEditor", targets: ["RSKeeperSQLEditor"]),
@@ -47,6 +48,8 @@ let package = Package(
     dependencies: [
         // GRDB.swift 7.11.1 — MIT. Versão EXATA (README §7; confirmada no SPK-N05).
         .package(url: "https://github.com/groue/GRDB.swift.git", exact: "7.11.1"),
+        // PostgresNIO 1.33.1 — MIT. Versão EXATA; usada só como transporte (SPK-N03, W1-T04).
+        .package(url: "https://github.com/vapor/postgres-nio.git", exact: "1.33.1"),
     ],
     targets: [
         // MARK: Núcleo não visual
@@ -105,6 +108,15 @@ let package = Package(
                 "RSKeeperDriversCore",
                 "RSKeeperSQLKit",
                 .product(name: "GRDB", package: "GRDB.swift"),
+            ]
+        ),
+        // Driver PostgreSQL sobre PostgresNIO (NST-04-03; condições do SPK-N03).
+        .target(
+            name: "RSKeeperDriverPostgreSQL",
+            dependencies: [
+                "RSKeeperDriversCore",
+                "RSKeeperSQLKit",
+                .product(name: "PostgresNIO", package: "postgres-nio"),
             ]
         ),
         // Editor SQL (vazio na Onda 0 — decisão E-1; implementação após o SPK-N01).
@@ -167,6 +179,10 @@ let package = Package(
         .testTarget(
             name: "RSKeeperDriverSQLiteTests",
             dependencies: ["RSKeeperDriverSQLite", "RSKeeperTesting"]
+        ),
+        .testTarget(
+            name: "RSKeeperDriverPostgreSQLTests",
+            dependencies: ["RSKeeperDriverPostgreSQL", "RSKeeperTesting"]
         ),
         .testTarget(
             name: "RSKeeperApplicationTests",

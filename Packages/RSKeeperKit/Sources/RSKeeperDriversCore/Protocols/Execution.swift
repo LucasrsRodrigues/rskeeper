@@ -146,6 +146,9 @@ public protocol PhysicalConnection: AnyObject, MetadataProvider {
     func transactionState() async -> TransactionState
     func resetSession() async throws(DriverError)
     func cancelHandle() -> (any CancelHandle)?
+    /// Alça vinculada a uma execução (DR-18; contrato v1.1): só cancela se **essa** execução ainda
+    /// estiver rodando, nunca a seguinte na mesma conexão. Padrão: `cancelHandle()`.
+    func cancelHandle(for executionID: ExecutionID) -> (any CancelHandle)?
     func close() async
 }
 

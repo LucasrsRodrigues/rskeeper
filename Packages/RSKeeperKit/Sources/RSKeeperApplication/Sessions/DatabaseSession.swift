@@ -67,13 +67,15 @@ public actor DatabaseSession {
         }
         let connection = lease.connection
         running[executionID] = (tab, connection)
+        // A instrução leva o ID da execução: o driver marca o envio e a alça cancela só esta (DR-18).
+        let statement = BoundStatement(sql: statement.sql, bindings: statement.bindings, executionID: executionID)
 
         let result: Result<StatementOutcome, RSKeeperError>
         do {
             let outcome = try await withTaskCancellationHandler {
                 try await connection.execute(statement, limits: limits)
             } onCancel: {
-                let handle = connection.cancelHandle()
+                let handle = connection.cancelHandle(for: executionID)
                 Task { await handle?.cancel() }
             }
             result = .success(outcome)
@@ -98,7 +100,7 @@ public actor DatabaseSession {
     /// Cancela uma execução em curso pelo ID (o lease só é liberado depois que ela termina; DR-18).
     public func cancel(_ executionID: ExecutionID) async {
         guard let entry = running[executionID] else { return }
-        await entry.connection.cancelHandle()?.cancel()
+        await entry.connection.cancelHandle(for: executionID)?.cancel()
     }
 
     /// Desfecho registrado de uma execução terminal (DR-06), se ainda em memória.
@@ -152,7 +154,7 @@ public actor DatabaseSession {
     public func close() async {
         guard !closed else { return }
         closed = true
-        for (_, entry) in running { await entry.connection.cancelHandle()?.cancel() }
+        for (executionID, entry) in running { await entry.connection.cancelHandle(for: executionID)?.cancel() }
         await waitForRunningToFinish(timeout: .seconds(5))
         for (_, connection) in manualTransactions {
             try? await connection.resetSession()                                    // rollback (DR-17)

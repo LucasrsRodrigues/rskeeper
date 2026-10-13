@@ -23,6 +23,7 @@ step() { # nome, comando…
 step toolchain scripts/check-toolchain.sh
 step hygiene scripts/ci/hygiene.sh
 step test-kit scripts/ci/test-kit.sh
+step test-drivers scripts/ci/test-drivers.sh
 step boundaries scripts/check-boundaries.sh
 step negative-checks scripts/ci/negative-checks.sh
 for c in Dev Test Release; do for sb in YES NO; do step "build-$c-sb$sb" scripts/ci/build.sh $c $sb; done; done

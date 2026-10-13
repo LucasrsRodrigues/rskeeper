@@ -249,17 +249,20 @@ public enum DriverConformance {
             if case .cancelled = DriverError.normalized(error) {} else { fail("cancelamento: esperado .cancelled, veio \(error)") }
         }
         if latency > .seconds(2) { fail("cancelamento levou \(latency) (meta ≤ 2 s)") }
-        // 2. Pela alça de cancelamento.
+        // 2. Pela alça de cancelamento, obtida com a execução já em curso (como a sessão faz).
+        let second = Task { () async throws -> StatementOutcome in   // sem typed throws: crash do IRGen no Swift 6.4 (W1-D01)
+            try await connection.execute(BoundStatement(sql: long), limits: .default)
+        }
+        try await Task.sleep(for: .milliseconds(300))
         if let handle = connection.cancelHandle() {
-            let second = Task { () async throws -> StatementOutcome in   // sem typed throws: crash do IRGen no Swift 6.4 (W1-D01)
-                try await connection.execute(BoundStatement(sql: long), limits: .default)
-            }
-            try await Task.sleep(for: .milliseconds(300))
             let handleStart = clock.now
             await handle.cancel()
             let handleResult = await second.result
             if case .success = handleResult { fail("alça de cancelamento não interrompeu") }
             if clock.now - handleStart > .seconds(2) { fail("alça levou \(clock.now - handleStart)") }
+        } else {
+            second.cancel()
+            _ = await second.result
         }
         if !isSelectOne(try await connection.execute(BoundStatement(sql: f.selectOne), limits: .default)) {
             fail("conexão inutilizável depois do cancelamento")
