@@ -20,7 +20,7 @@ struct DriverContractTests {
         }
         #expect(batch.columns == [[.int(1), .int(2)]])
         await connection.close()
-        #expect(await log.events == [.opened, .executed("SELECT n"), .closed])
+        #expect(await log.events == [.opened(1), .executed("SELECT n"), .closed(1)])
     }
 
     @Test("maxRows é aplicado e marca truncamento")
@@ -75,7 +75,7 @@ struct DriverContractTests {
         #expect(await connection.transactionState() == .inTransaction)
         try await connection.resetSession()
         #expect(await connection.transactionState() == .idle)
-        #expect(await log.events.suffix(2) == [.rolledBack, .reset])
+        #expect(await log.events.suffix(2) == [.rolledBack(1), .reset(1)])
     }
 
     @Test("SecretValue nunca aparece em description")

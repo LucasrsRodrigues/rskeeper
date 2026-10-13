@@ -39,8 +39,9 @@ public struct InMemoryDriver: DriverFactory {
     public func open(_ target: ResolvedTarget, options: OpenOptions) async throws(DriverError) -> any PhysicalConnection {
         do { try await Task.sleep(for: script.openDelay) } catch { throw .cancelled }
         if let failure = script.failOpen { throw failure }
-        let connection = InMemoryConnection(script: script, log: log)
-        await log.record(.opened)
+        let number = await log.allocateConnectionNumber()
+        let connection = InMemoryConnection(number: number, script: script, log: log)
+        await log.record(.opened(number))
         return connection
     }
 }
@@ -48,23 +49,32 @@ public struct InMemoryDriver: DriverFactory {
 /// Eventos observáveis do driver em memória, para os testes verificarem ordem e efeitos.
 public actor InMemoryDriverLog {
     public enum Event: Hashable, Sendable {
-        case opened, executed(String), cancelled(String), rolledBack, reset, closed
+        case opened(Int), executed(String), cancelled(String), rolledBack(Int), reset(Int), closed(Int)
     }
     public private(set) var events: [Event] = []
+    private var nextConnection = 0
     public init() {}
     public func record(_ event: Event) { events.append(event) }
+    /// Número sequencial da próxima conexão aberta (identifica a conexão nos eventos).
+    func allocateConnectionNumber() -> Int {
+        nextConnection += 1
+        return nextConnection
+    }
 }
 
 /// Conexão em memória. `actor` garante isolamento; o cancelamento é cooperativo via `Task`.
 public actor InMemoryConnection: PhysicalConnection {
     public nonisolated let serverVersion = "in-memory 1.0"
+    /// Número sequencial desta conexão nos eventos do log.
+    public nonisolated let number: Int
     private let script: InMemoryDriver.Script
     private let log: InMemoryDriverLog
     private var inTransaction = false
     private var current: (sql: String, task: Task<StatementOutcome, any Error>)?
     private var closed = false
 
-    init(script: InMemoryDriver.Script, log: InMemoryDriverLog) {
+    init(number: Int, script: InMemoryDriver.Script, log: InMemoryDriverLog) {
+        self.number = number
         self.script = script
         self.log = log
     }
@@ -112,9 +122,9 @@ public actor InMemoryConnection: PhysicalConnection {
     public func resetSession() async throws(DriverError) {
         if inTransaction {
             inTransaction = false
-            await log.record(.rolledBack)
+            await log.record(.rolledBack(number))
         }
-        await log.record(.reset)
+        await log.record(.reset(number))
     }
 
     public nonisolated func cancelHandle() -> (any CancelHandle)? { InMemoryCancelHandle(connection: self) }
@@ -129,7 +139,7 @@ public actor InMemoryConnection: PhysicalConnection {
         guard !closed else { return }
         closed = true
         current?.task.cancel()
-        await log.record(.closed)
+        await log.record(.closed(number))
     }
 
     public var isClosed: Bool { closed }
