@@ -1,0 +1,7 @@
+// Alvo de XCUITest (W0-T31). Executa o app do ambiente Test.
+PRODUCT_NAME = RSKeeperUITests
+PRODUCT_BUNDLE_IDENTIFIER = $(RSK_BUNDLE_ID_BASE).uitests
+GENERATE_INFOPLIST_FILE = YES
+TEST_TARGET_NAME = RSKeeper
+CODE_SIGN_ENTITLEMENTS =
+LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/../Frameworks @loader_path/../Frameworks

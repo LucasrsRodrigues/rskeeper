@@ -1,0 +1,17 @@
+// Produção (W0-T10). Sem publicação nesta onda; assinatura ad hoc.
+#include "Base.xcconfig"
+
+RSK_ENVIRONMENT = prod
+RSK_BUNDLE_ID_SUFFIX = $(RSK_BUNDLE_ID_SUFFIX_RELEASE)
+RSK_APP_PRODUCT_NAME = RSKeeper
+SWIFT_ACTIVE_COMPILATION_CONDITIONS =
+
+SWIFT_OPTIMIZATION_LEVEL = -O
+SWIFT_COMPILATION_MODE = wholemodule
+GCC_OPTIMIZATION_LEVEL = s
+ONLY_ACTIVE_ARCH = NO
+ENABLE_TESTABILITY = NO
+DEBUG_INFORMATION_FORMAT = dwarf-with-dsym
+
+// Release: sem get-task-allow (exigido para notarização; docs/native/24).
+CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO

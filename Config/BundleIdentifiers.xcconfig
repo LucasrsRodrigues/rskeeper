@@ -1,0 +1,6 @@
+// Bundle IDs — ÚNICO lugar onde ficam (W0-T10, aceite 4).
+// PROVISÓRIOS (D-N3): trocar depois exige migrar container e Keychain (docs/native/24 DIST-01).
+RSK_BUNDLE_ID_BASE = app.rskeeper.RSKeeper
+RSK_BUNDLE_ID_SUFFIX_DEV = .dev
+RSK_BUNDLE_ID_SUFFIX_TEST = .test
+RSK_BUNDLE_ID_SUFFIX_RELEASE =

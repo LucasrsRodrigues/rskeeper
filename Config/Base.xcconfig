@@ -1,0 +1,43 @@
+// Configurações comuns a todos os ambientes (W0-T08/T10/T11).
+#include "BundleIdentifiers.xcconfig"
+
+SDKROOT = macosx
+// D-N1
+MACOSX_DEPLOYMENT_TARGET = 26.0
+// ARCHS não é fixado: vale o padrão do Xcode (D-N8, Intel pendente).
+
+// Swift 6 language mode
+SWIFT_VERSION = 6.0
+SWIFT_STRICT_CONCURRENCY = complete
+// E-2 (no Xcode é build setting, não unsafeFlags)
+SWIFT_TREAT_WARNINGS_AS_ERRORS = YES
+GCC_TREAT_WARNINGS_AS_ERRORS = YES
+SWIFT_EMIT_LOC_STRINGS = YES
+LOCALIZATION_PREFERS_STRING_CATALOGS = YES
+
+// Assinatura: SEM certificados reais nesta onda. Ad hoc ("-") localmente e no CI.
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = -
+DEVELOPMENT_TEAM =
+// W0-T11, aceite 1 (todas as configurações)
+ENABLE_HARDENED_RUNTIME = YES
+// Com assinatura ad hoc o Xcode desliga o Hardened Runtime; a flag abaixo o mantém ligado
+// para que a verificação da W0-T11 valha no artefato local (sem certificados reais).
+OTHER_CODE_SIGN_FLAGS = $(inherited) --options=runtime
+// Hardened Runtime + assinatura ad hoc: a validação de bibliotecas recusa a `.debug.dylib`
+// separada dos builds de depuração (Team IDs diferentes). Executável único em todas as configurações.
+ENABLE_DEBUG_DYLIB = NO
+
+// Variante de sandbox (E-4). YES = RSKeeper.sandboxed.entitlements; NO = RSKeeper.direct.entitlements.
+// Decisão final: SPK-N07 (ADR-N07).
+RSK_SANDBOX = YES
+RSK_ENTITLEMENTS_VARIANT_YES = sandboxed
+RSK_ENTITLEMENTS_VARIANT_NO = direct
+
+ENABLE_USER_SCRIPT_SANDBOXING = YES
+DEAD_CODE_STRIPPING = YES
+COMBINE_HIDPI_IMAGES = YES
+CLANG_ENABLE_MODULES = YES
+ENABLE_STRICT_OBJC_MSGSEND = YES
+MARKETING_VERSION = 0.0.1
+CURRENT_PROJECT_VERSION = 1

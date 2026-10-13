@@ -1,0 +1,9 @@
+// Configurações do alvo do app (todas as configurações herdam Dev/Test/Release do projeto).
+PRODUCT_NAME = $(RSK_APP_PRODUCT_NAME)
+PRODUCT_MODULE_NAME = RSKeeperApp
+PRODUCT_BUNDLE_IDENTIFIER = $(RSK_BUNDLE_ID_BASE)$(RSK_BUNDLE_ID_SUFFIX)
+INFOPLIST_FILE = App/Info.plist
+GENERATE_INFOPLIST_FILE = NO
+CODE_SIGN_ENTITLEMENTS = App/RSKeeper.$(RSK_ENTITLEMENTS_VARIANT_$(RSK_SANDBOX)).entitlements
+ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
+LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/../Frameworks
