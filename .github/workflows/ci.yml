@@ -1,0 +1,100 @@
+# CI da onda 0 (W0-T16; NST-00-04). Ordem do plano 23 §W0-T16. Sem certificados reais: tudo é
+# assinado ad hoc (CODE_SIGN_IDENTITY=-). Sem segredos, sem publicação, sem telemetria.
+# Cada job chama os mesmos scripts usados localmente (scripts/ci/*.sh).
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Xcode fixado em .xcode-version (27.0). Ajustar o caminho se o runner usar outro nome.
+  DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+
+jobs:
+  toolchain:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/check-toolchain.sh
+
+  hygiene:
+    needs: toolchain
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/ci/hygiene.sh
+
+  test-kit:
+    needs: hygiene
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/ci/test-kit.sh
+
+  boundaries:
+    needs: test-kit
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/check-boundaries.sh
+
+  build:
+    needs: boundaries
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Dev, Test, Release]
+        sandbox: ["YES", "NO"]   # R-W0-05: as duas variantes até a decisão final
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/ci/build.sh ${{ matrix.configuration }} ${{ matrix.sandbox }}
+
+  test-app:
+    needs: build
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        sandbox: ["YES", "NO"]
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/ci/test-app.sh ${{ matrix.sandbox }}
+      - run: scripts/ci/fs-footprint.sh ${{ matrix.sandbox }}
+
+  license-audit:
+    needs: test-app
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/license-audit.sh
+
+  artifact:
+    needs: license-audit
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/ci/build.sh Release YES && scripts/ci/package-adhoc.sh YES
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RSKeeper-wave0-adhoc
+          path: dist/RSKeeper-wave0-adhoc-sbYES.zip
+          retention-days: 14
+
+  # NST-00-04 crit. 2 (I-2): definido e DESABILITADO até a onda 1 (NST-04-02/03).
+  drivers-containers:
+    if: ${{ false }}
+    needs: test-kit
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Ativado na onda 1 com os drivers SQLite e PostgreSQL."
