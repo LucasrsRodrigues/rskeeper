@@ -26,9 +26,20 @@ public final class WorkspaceModel {
     @ObservationIgnored weak var split: WorkspaceSplitController?
     @ObservationIgnored private let sessions: SessionRegistry?
 
-    public init(windowID: WindowID, title: String, sessionID: SessionID?, sessions: SessionRegistry?) {
+    /// Identificação da conexão na barra de status (NST-05-03).
+    public let driverName: String?
+    public let environment: EnvironmentKind?
+    public let labelColor: LabelColor
+    /// Status da aba ativa (contagens, tempo); preenchido pelas abas (W1-T20…T24).
+    public var tabStatus: String?
+
+    public init(windowID: WindowID, title: String, sessionID: SessionID?, sessions: SessionRegistry?,
+                driverName: String? = nil, environment: EnvironmentKind? = nil, labelColor: LabelColor = .none) {
         self.windowID = windowID
         self.title = title
+        self.driverName = driverName
+        self.environment = environment
+        self.labelColor = labelColor
         self.sessions = sessions
         if let sessionID, let sessions {
             Task { [weak self] in self?.session = try? await sessions.session(sessionID, for: windowID) }

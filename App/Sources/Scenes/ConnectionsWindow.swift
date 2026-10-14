@@ -24,8 +24,10 @@ struct ConnectionsWindowView: View {
                 } else {
                     Color.clear.onAppear {
                         model = ConnectionsModel(service: ready.connections) { profile, session, window in
+                            let driver = ready.connections.driverChoices.first { $0.id == profile.driverID }?.displayName
                             openWindow(id: SceneID.workspace, value: WorkspaceWindowID(
-                                raw: window.raw, sessionID: session.raw, profileID: profile.id.raw, title: profile.name))
+                                raw: window.raw, sessionID: session.raw, profileID: profile.id.raw, title: profile.name,
+                                driverName: driver, environment: profile.environment, labelColor: profile.labelColor))
                         }
                     }
                 }

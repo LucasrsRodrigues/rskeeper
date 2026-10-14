@@ -17,6 +17,22 @@
         }
       }
     },
+    "CUSTOM": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CUSTOM"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PERSONALIZADO"
+          }
+        }
+      }
+    },
     "Cancel": {
       "localizations": {
         "en": {
@@ -305,6 +321,22 @@
         }
       }
     },
+    "DEV": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DEV"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DEV"
+          }
+        }
+      }
+    },
     "Data": {
       "localizations": {
         "en": {
@@ -413,6 +445,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Desconectar"
+          }
+        }
+      }
+    },
+    "Disconnected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnected"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desconectado"
           }
         }
       }
@@ -733,6 +781,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Atalhos de teclado"
+          }
+        }
+      }
+    },
+    "LOCAL": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LOCAL"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LOCAL"
           }
         }
       }
@@ -1185,6 +1249,22 @@
         }
       }
     },
+    "STAGING": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "STAGING"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HOMOLOG"
+          }
+        }
+      }
+    },
     "Save": {
       "localizations": {
         "en": {
@@ -1309,6 +1389,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Homologação"
+          }
+        }
+      }
+    },
+    "Switch Connection…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch Connection…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trocar conexão…"
+          }
+        }
+      }
+    },
+    "TEST": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TEST"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TESTE"
           }
         }
       }

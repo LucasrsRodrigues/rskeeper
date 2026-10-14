@@ -10,6 +10,7 @@ struct WorkspaceWindowView: View {
     let route: WorkspaceWindowID?
     let services: AppServices
     @State private var model: WorkspaceModel?
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         Group {
@@ -29,14 +30,7 @@ struct WorkspaceWindowView: View {
                     RKEmptyState(String(localized: "Inspector"), systemImage: "sidebar.right")
                         .accessibilityIdentifier("rk.workspace.inspector")
                 } status: {
-                    HStack {
-                        Text(model.notice ?? model.title).rkTypography(.caption).foregroundStyle(.rk(.textSecondary))
-                        Spacer()
-                    }
-                    .padding(.horizontal, RKSpacing.s2)
-                    .frame(height: 24)
-                    .background(Color.rk(.surfaceWindow))
-                    .accessibilityIdentifier("rk.workspace.status")
+                    WorkspaceStatusBar(model: model) { openWindow(id: SceneID.connections) }
                 }
                 .focusedSceneValue(\.commandTarget, CommandTarget(performer: model))
             } else {
@@ -45,7 +39,9 @@ struct WorkspaceWindowView: View {
                     if case .ready(let ready) = services.state { sessions = ready.sessions }
                     model = WorkspaceModel(windowID: WindowID(raw: route?.raw ?? UUID()),
                                            title: route?.title ?? String(localized: "Empty workspace"),
-                                           sessionID: route?.sessionID.map(SessionID.init(raw:)), sessions: sessions)
+                                           sessionID: route?.sessionID.map(SessionID.init(raw:)), sessions: sessions,
+                                           driverName: route?.driverName, environment: route?.environment,
+                                           labelColor: route?.labelColor ?? .none)
                 }
             }
         }
