@@ -17,7 +17,10 @@ struct RSKeeperApp: App {
             ConnectionsWindowView(environment: environment.kind)
         }
         .defaultSize(width: 760, height: 480)
-        .commands { BaseCommands() }
+        .commands {
+            RegistryCommands()
+            BaseCommands()
+        }
 
         WindowGroup("Workspace", id: SceneID.workspace, for: WorkspaceWindowID.self) { $id in
             WorkspaceWindowView(id: id)

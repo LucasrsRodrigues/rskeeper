@@ -15,6 +15,7 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 | W1-T08 Confirmação de risco (NST-07-04, ampliada) | Concluída | `PolicyTests`: matriz DR-11 (18 casos), ambientes não produtivos, contornos por comentário/caixa/CTE; token na sessão com SQLite real: sem token recusa, uso único, outra aba, outro digest (instrução e parâmetro), expiração, nome digitado em produção, somente leitura |
 | W1-T09 ResultStore (NST-07-03, núcleo) | Concluída | `ResultStoreTests` (6): páginas por linhas e bytes, LRU só em abas inativas (`.evicted`), TTL (`.expired`) com relógio manual, liberação por nova execução e fechamento, orçamento do processo reduz `maxBytes`, 50.000 × 50 em < 2 s |
 | W1-T10 Recuperação de falhas e autosave (NST-01-05) | Concluída | `RecoveryTests` (4): debounce/flush/aba fechada; boot depois de encerramento forçado restaura abas e texto não salvo; conexão perdida → evento, recusa até reconectar, escrita não repetida; transação manual nunca "ativa" após queda. PG real: `pg_terminate_backend` → `.connection` em 0,4 s (R-NDRV-08) |
+| W1-T11 Comandos e menus (NST-13-01) | Concluída | `CommandRegistryTests` (4): unicidade de IDs e atalhos, atalhos do doc 10 §6.2, habilitação por estado, contexto da janela; XCUITest: sem conexão, "Executar tudo", "Cancelar execução" e "Desconectar" desabilitados, "Nova conexão…" habilitado |
 | W1-T03 Driver SQLite (NST-04-02) | Concluída | `RSKeeperDriverSQLiteTests`: **12/12** verificações de conformidade (nenhuma pulada); NT-DRV-12 (journal e sidecars); WAL sem sidecars em somente leitura; isolamento entre conexões; tipos; redação |
 
 ## Decisões
@@ -42,6 +43,9 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 | W1-D14 | `SessionRegistry.open` exige `policy:`; a política é reaplicada em `executeScript` | Nenhum chamador pode esquecer o ambiente de produção; contornar a UI não basta. `execute` (instrução única) fica para leituras internas (páginas, metadados) e não passa pela política — risco registrado |
 
 | W1-D15 | Autosave grava também o registro mínimo da aba (`tab`) junto com o rascunho | `draft.tab_id` referencia `tab`, e o critério 2 pede restaurar as abas, não só o texto; `TabKind` mínimo no Domain (consulta, tabela) |
+
+| W1-D16 | ⌘W/⌘T (abas) só entram na W1-T20; F5/⇧F5 ficam com o editor (W1-T21) via `performKeyEquivalent` | Ligar ⌘W antes da barra de abas roubaria o "Fechar janela"; o SwiftUI só aceita um atalho por item de menu |
+| W1-D17 | CI enfileira runs (`cancel-in-progress: false`) | Com um runner, cancelar deixava commits enviados sem validação |
 
 ## Achados
 

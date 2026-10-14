@@ -70,3 +70,23 @@ public final class WindowModel {
         stateUpdates += 1
     }
 }
+
+// MARK: Comandos (NST-13-01)
+
+extension WindowModel: CommandPerforming {
+    /// Contexto da janela para habilitar menus e atalhos. Abas, seleção e execução entram com as
+    /// telas da onda 1 (W1-T17…T24); até lá, só o estado da conexão.
+    public var commandContext: CommandContext {
+        if case .connected = status { return CommandContext(isConnected: true) }
+        return .none
+    }
+
+    public func perform(_ command: CommandID) {
+        switch command {
+        case CommandRegistry.disconnect:
+            Task { await closeWindow() }
+        default:
+            break                                         // ainda sem ação nesta janela
+        }
+    }
+}

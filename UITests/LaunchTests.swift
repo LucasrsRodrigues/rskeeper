@@ -35,6 +35,22 @@ final class LaunchTests: XCTestCase {
         app.terminate()
     }
 
+    /// NST-13-01, crit. 1: sem conexão, comandos de conexão e de consulta ficam desabilitados.
+    func testConnectionCommandsDisabledWithoutConnection() {
+        let app = launch(language: "en")
+        XCTAssertTrue(app.descendants(matching: .any)["rk.connections.emptyState"].waitForExistence(timeout: 10))
+        app.menuBars.menuBarItems["Query"].click()
+        XCTAssertTrue(app.menuItems["Run All"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.menuItems["Run All"].isEnabled)
+        XCTAssertFalse(app.menuItems["Cancel Execution"].isEnabled)
+        app.typeKey(.escape, modifierFlags: [])
+        app.menuBars.menuBarItems["File"].click()
+        XCTAssertFalse(app.menuItems["Disconnect"].isEnabled)
+        XCTAssertTrue(app.menuItems["New Connection…"].isEnabled)
+        app.typeKey(.escape, modifierFlags: [])
+        app.terminate()
+    }
+
     func testDebugCommandOpensEmptyWorkspaceWindow() {
         let app = launch(language: "en")
         XCTAssertTrue(app.descendants(matching: .any)["rk.connections.emptyState"].waitForExistence(timeout: 10))

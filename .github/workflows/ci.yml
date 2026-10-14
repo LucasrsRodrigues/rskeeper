@@ -20,7 +20,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Runner único: enfileira em vez de cancelar, para que todo commit enviado seja validado.
+  cancel-in-progress: false
 
 jobs:
   toolchain:
