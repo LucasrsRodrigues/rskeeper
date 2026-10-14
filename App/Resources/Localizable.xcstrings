@@ -433,6 +433,22 @@
         }
       }
     },
+    "Explorer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explorer"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explorador"
+          }
+        }
+      }
+    },
     "Filter connections": {
       "localizations": {
         "en": {
@@ -529,6 +545,22 @@
         }
       }
     },
+    "History": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Histórico"
+          }
+        }
+      }
+    },
     "Host": {
       "localizations": {
         "en": {
@@ -589,6 +621,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Importar de URL"
+          }
+        }
+      }
+    },
+    "Inspector": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inspector"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inspetor"
+          }
+        }
+      }
+    },
+    "Inspector closed: not enough space": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inspector closed: not enough space"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inspetor fechado: pouco espaço"
           }
         }
       }
@@ -733,6 +797,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nenhum arquivo escolhido"
+          }
+        }
+      }
+    },
+    "Not connected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not connected"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desconectado"
           }
         }
       }
@@ -1069,6 +1149,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Salvas"
+          }
+        }
+      }
+    },
+    "Saved Queries": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved Queries"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consultas salvas"
           }
         }
       }

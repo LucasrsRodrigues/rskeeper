@@ -17,6 +17,7 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 | W1-T10 Recuperação de falhas e autosave (NST-01-05) | Concluída | `RecoveryTests` (4): debounce/flush/aba fechada; boot depois de encerramento forçado restaura abas e texto não salvo; conexão perdida → evento, recusa até reconectar, escrita não repetida; transação manual nunca "ativa" após queda. PG real: `pg_terminate_backend` → `.connection` em 0,4 s (R-NDRV-08) |
 | W1-T11 Comandos e menus (NST-13-01) | Concluída | `CommandRegistryTests` (4): unicidade de IDs e atalhos, atalhos do doc 10 §6.2, habilitação por estado, contexto da janela; XCUITest: sem conexão, "Executar tudo", "Cancelar execução" e "Desconectar" desabilitados, "Nova conexão…" habilitado |
 | W1-T12…T16 Tela de conexões, seletor de driver, formulários SQLite e servidor, importar URL, testar e conectar (NST-03-01…05) | Implementadas; verificação parcial | `ConnectionsServiceTests` (4, SQLite real): arquivo → bookmark persistente → testar → conectar → recentes; arquivo da raiz do app recusado; URL sem expor senha; senha no Keychain (.test) ou só uso único. XCUITest: nova conexão → seletor (Avançar só com seleção) → formulário → testar → conectar → workspace com o título da conexão → linha na sidebar. **Pendentes para o portão (W1-T25):** só teclado (setas/Enter), snapshots da tela, formulário PostgreSQL pela UI, VoiceOver |
+| W1-T17 Shell de quatro regiões (NST-05-01) | Concluída (parcial em a11y/snapshot) | `WorkspaceLayoutTests` (3): regras de janela estreita, limites do SPK-N08, autosave por janela. XCUITest: trilho, sidebar visível, inspetor fechado no início, Visualizar → mostrar/ocultar inspetor e sidebar. **Pendentes:** ciclo F6 verificado por teste, snapshots por largura, VoiceOver |
 | W1-T03 Driver SQLite (NST-04-02) | Concluída | `RSKeeperDriverSQLiteTests`: **12/12** verificações de conformidade (nenhuma pulada); NT-DRV-12 (journal e sidecars); WAL sem sidecars em somente leitura; isolamento entre conexões; tipos; redação |
 
 ## Decisões
@@ -52,6 +53,9 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 | W1-D19 | Acesso de escopo de longa duração (`ScopedAccessTracker`) para o arquivo SQLite da sessão | O `withAccess` da Onda 0 fecha o escopo ao fim do closure; a conexão precisa do arquivo aberto. O escopo fica aberto até o fim do processo (fechar ao encerrar a sessão é pendência) |
 | W1-D20 | Gancho só Dev/Test "Usar arquivo de banco de amostra" (menu Debug) | O painel de arquivos do sistema não é automatizável no XCUITest; o arquivo entra pela mesma concessão por bookmark |
 | W1-D21 | Gate de avisos conta só diagnósticos de compilação em fonte própria (`arquivo:linha: warning:`, macros, linker) | Avisos de ferramenta (cache do SwiftPM com acesso concorrente, avisos internos do runner do XCTest) davam falso positivo; os casos reais seguem cobertos e o check negativo confirma |
+
+| W1-D22 | Regras de janela estreita só durante o redimensionamento ao vivo | Na montagem, a janela passa por larguras provisórias e a regra recolhia a sidebar por engano (achado do XCUITest) |
+| W1-D23 | XCUITests com `-ApplePersistenceIgnoreState YES` | A restauração do macOS reabria janelas de execuções anteriores |
 
 ## Achados
 

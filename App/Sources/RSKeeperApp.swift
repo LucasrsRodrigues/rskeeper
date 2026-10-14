@@ -24,8 +24,9 @@ struct RSKeeperApp: App {
         }
 
         WindowGroup("Workspace", id: SceneID.workspace, for: WorkspaceWindowID.self) { $id in
-            WorkspaceWindowView(id: id)
+            WorkspaceWindowView(route: id, services: services)
         }
+        .defaultSize(width: 1_440, height: 900)                          // doc 10 §3.2 (ideal)
 
         #if RSK_DEV_BUILD || RSK_TEST_BUILD
         Window("Component Gallery", id: SceneID.gallery) {

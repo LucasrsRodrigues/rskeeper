@@ -15,7 +15,7 @@ final class LaunchTests: XCTestCase {
 
     private func launch(language: String) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-RSKeeperDataRoot", "uitest-\(UUID().uuidString)",
+        app.launchArguments = ["-RSKeeperDataRoot", "uitest-\(UUID().uuidString)", "-ApplePersistenceIgnoreState", "YES",
                                "-AppleLanguages", "(\(language))", "-AppleLocale", language.replacingOccurrences(of: "-", with: "_")]
         app.launch()
         return app
@@ -80,12 +80,33 @@ final class LaunchTests: XCTestCase {
         app.terminate()
     }
 
+    /// NST-05-01: shell de quatro regiões; o menu Visualizar mostra/oculta sidebar e inspetor.
+    func testWorkspaceShellTogglesRegions() {
+        let app = launch(language: "en")
+        XCTAssertTrue(app.descendants(matching: .any)["rk.connections.emptyState"].firstMatch.waitForExistence(timeout: 10))
+        app.menuBars.menuBarItems["Debug"].click()
+        app.menuItems["Open Empty Workspace Window"].click()
+        XCTAssertTrue(app.descendants(matching: .any)["rk.workspace.rail"].firstMatch.waitForExistence(timeout: 10))
+        let sidebar = app.descendants(matching: .any)["rk.workspace.sidebar"].firstMatch
+        let inspector = app.descendants(matching: .any)["rk.workspace.inspector"].firstMatch
+        XCTAssertTrue(sidebar.waitForExistence(timeout: 5) && sidebar.isHittable)
+        XCTAssertFalse(inspector.exists && inspector.isHittable, "o inspetor começa fechado")
+        app.menuBars.menuBarItems["View"].click()
+        app.menuItems["Toggle Inspector"].click()
+        XCTAssertTrue(inspector.waitForExistence(timeout: 5))
+        app.menuBars.menuBarItems["View"].click()
+        app.menuItems["Toggle Sidebar"].click()
+        let hidden = expectation(for: NSPredicate(format: "exists == false OR hittable == false"), evaluatedWith: sidebar)
+        wait(for: [hidden], timeout: 5)
+        app.terminate()
+    }
+
     func testDebugCommandOpensEmptyWorkspaceWindow() {
         let app = launch(language: "en")
         XCTAssertTrue(app.descendants(matching: .any)["rk.connections.emptyState"].waitForExistence(timeout: 10))
         app.menuBars.menuBarItems["Debug"].click()
         app.menuItems["Open Empty Workspace Window"].click()
-        XCTAssertTrue(app.descendants(matching: .any)["rk.workspace.window"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.descendants(matching: .any)["rk.workspace.split"].firstMatch.waitForExistence(timeout: 10))
         app.terminate()
     }
 }
