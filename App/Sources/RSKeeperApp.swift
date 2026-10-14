@@ -6,6 +6,7 @@ import SwiftUI
 /// Aplicação SwiftUI (iniciada por `RSKeeperMain` depois da guarda de ambiente).
 struct RSKeeperApp: App {
     private let environment = EnvironmentGuard.environment
+    @State private var services = AppServices(environment: EnvironmentGuard.environment)
 
     init() {
         // Abas nativas de NSWindow desligadas: várias conexões abrem várias janelas (docs/native/10).
@@ -14,7 +15,7 @@ struct RSKeeperApp: App {
 
     var body: some Scene {
         Window("Connections", id: SceneID.connections) {
-            ConnectionsWindowView(environment: environment.kind)
+            ConnectionsWindowView(services: services)
         }
         .defaultSize(width: 760, height: 480)
         .commands {

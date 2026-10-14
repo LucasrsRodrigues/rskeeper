@@ -7,9 +7,10 @@ struct WorkspaceWindowView: View {
     let id: WorkspaceWindowID?
 
     var body: some View {
-        RKEmptyState(String(localized: "Empty workspace"), systemImage: "rectangle.split.3x1")
+        RKEmptyState(id?.title ?? String(localized: "Empty workspace"), systemImage: "rectangle.split.3x1")
             .frame(minWidth: 800, minHeight: 500)
             .background(Color.rk(.surfaceWindow))
             .accessibilityIdentifier(AccessibilityID.workspaceWindow)
+            .navigationTitle(id?.title ?? String(localized: "Workspace"))
     }
 }

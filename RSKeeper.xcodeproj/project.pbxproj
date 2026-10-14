@@ -12,6 +12,10 @@
 		0A0000000000000000000072 /* RSKeeperDesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 0A0000000000000000000063 /* RSKeeperDesignSystem */; };
 		0A0000000000000000000073 /* RSKeeperSecurity in Frameworks */ = {isa = PBXBuildFile; productRef = 0A0000000000000000000064 /* RSKeeperSecurity */; };
 		0A0000000000000000000074 /* RSKeeperDomain in Frameworks */ = {isa = PBXBuildFile; productRef = 0A0000000000000000000065 /* RSKeeperDomain */; };
+		0A0000000000000000000075 /* RSKeeperPersistence in Frameworks */ = {isa = PBXBuildFile; productRef = 0A0000000000000000000066 /* RSKeeperPersistence */; };
+		0A0000000000000000000076 /* RSKeeperDriversCore in Frameworks */ = {isa = PBXBuildFile; productRef = 0A0000000000000000000067 /* RSKeeperDriversCore */; };
+		0A0000000000000000000077 /* RSKeeperDriverSQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 0A0000000000000000000068 /* RSKeeperDriverSQLite */; };
+		0A0000000000000000000078 /* RSKeeperDriverPostgreSQL in Frameworks */ = {isa = PBXBuildFile; productRef = 0A0000000000000000000069 /* RSKeeperDriverPostgreSQL */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -55,6 +59,10 @@
 				0A0000000000000000000072 /* RSKeeperDesignSystem in Frameworks */,
 				0A0000000000000000000073 /* RSKeeperSecurity in Frameworks */,
 				0A0000000000000000000074 /* RSKeeperDomain in Frameworks */,
+				0A0000000000000000000078 /* RSKeeperDriverPostgreSQL in Frameworks */,
+				0A0000000000000000000077 /* RSKeeperDriverSQLite in Frameworks */,
+				0A0000000000000000000076 /* RSKeeperDriversCore in Frameworks */,
+				0A0000000000000000000075 /* RSKeeperPersistence in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -139,6 +147,10 @@
 				0A0000000000000000000063 /* RSKeeperDesignSystem */,
 				0A0000000000000000000064 /* RSKeeperSecurity */,
 				0A0000000000000000000065 /* RSKeeperDomain */,
+				0A0000000000000000000066 /* RSKeeperPersistence */,
+				0A0000000000000000000067 /* RSKeeperDriversCore */,
+				0A0000000000000000000068 /* RSKeeperDriverSQLite */,
+				0A0000000000000000000069 /* RSKeeperDriverPostgreSQL */,
 			);
 			productName = RSKeeper;
 			productReference = 0A0000000000000000000010 /* RSKeeper.app */;
@@ -378,6 +390,22 @@
 		0A0000000000000000000065 /* RSKeeperDomain */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RSKeeperDomain;
+		};
+		0A0000000000000000000066 /* RSKeeperPersistence */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RSKeeperPersistence;
+		};
+		0A0000000000000000000067 /* RSKeeperDriversCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RSKeeperDriversCore;
+		};
+		0A0000000000000000000068 /* RSKeeperDriverSQLite */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RSKeeperDriverSQLite;
+		};
+		0A0000000000000000000069 /* RSKeeperDriverPostgreSQL */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RSKeeperDriverPostgreSQL;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -51,6 +51,35 @@ final class LaunchTests: XCTestCase {
         app.terminate()
     }
 
+    /// NST-03-01…05: nova conexão → seletor de driver → formulário SQLite → testar → conectar → workspace
+    /// com o título da conexão; a conexão aparece em "Recentes".
+    func testCreateTestAndConnectSQLite() {
+        let app = launch(language: "en")
+        XCTAssertTrue(app.buttons["rk.connections.new"].waitForExistence(timeout: 10))
+        app.buttons["rk.connections.new"].click()
+        let sqlite = app.descendants(matching: .any)["rk.driverPicker.item.sqlite"].firstMatch
+        XCTAssertTrue(sqlite.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["rk.driverPicker.next"].isEnabled, "Avançar só com seleção (CAP-03)")
+        sqlite.click()
+        app.buttons["rk.driverPicker.next"].click()
+        app.menuBars.menuBarItems["Debug"].click()
+        app.menuItems["Use Sample Database File"].click()
+        let name = app.textFields["rk.connections.form.name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 10))
+        name.click()
+        name.typeKey("a", modifierFlags: .command)
+        name.typeText("Amostra UI")
+        app.buttons["rk.connections.form.test"].click()
+        let result = app.descendants(matching: .any)["rk.connections.form.result"].firstMatch
+        XCTAssertTrue(result.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "value CONTAINS 'SQLite'")).firstMatch.exists
+                      || result.label.contains("SQLite"))
+        app.buttons["rk.connections.form.connect"].click()
+        XCTAssertTrue(app.windows["Amostra UI"].waitForExistence(timeout: 10), "o título da janela identifica a conexão")
+        XCTAssertTrue(app.descendants(matching: .any)["rk.connections.row.Amostra UI"].firstMatch.waitForExistence(timeout: 5))
+        app.terminate()
+    }
+
     func testDebugCommandOpensEmptyWorkspaceWindow() {
         let app = launch(language: "en")
         XCTAssertTrue(app.descendants(matching: .any)["rk.connections.emptyState"].waitForExistence(timeout: 10))

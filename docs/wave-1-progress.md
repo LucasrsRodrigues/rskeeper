@@ -16,6 +16,7 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 | W1-T09 ResultStore (NST-07-03, núcleo) | Concluída | `ResultStoreTests` (6): páginas por linhas e bytes, LRU só em abas inativas (`.evicted`), TTL (`.expired`) com relógio manual, liberação por nova execução e fechamento, orçamento do processo reduz `maxBytes`, 50.000 × 50 em < 2 s |
 | W1-T10 Recuperação de falhas e autosave (NST-01-05) | Concluída | `RecoveryTests` (4): debounce/flush/aba fechada; boot depois de encerramento forçado restaura abas e texto não salvo; conexão perdida → evento, recusa até reconectar, escrita não repetida; transação manual nunca "ativa" após queda. PG real: `pg_terminate_backend` → `.connection` em 0,4 s (R-NDRV-08) |
 | W1-T11 Comandos e menus (NST-13-01) | Concluída | `CommandRegistryTests` (4): unicidade de IDs e atalhos, atalhos do doc 10 §6.2, habilitação por estado, contexto da janela; XCUITest: sem conexão, "Executar tudo", "Cancelar execução" e "Desconectar" desabilitados, "Nova conexão…" habilitado |
+| W1-T12…T16 Tela de conexões, seletor de driver, formulários SQLite e servidor, importar URL, testar e conectar (NST-03-01…05) | Implementadas; verificação parcial | `ConnectionsServiceTests` (4, SQLite real): arquivo → bookmark persistente → testar → conectar → recentes; arquivo da raiz do app recusado; URL sem expor senha; senha no Keychain (.test) ou só uso único. XCUITest: nova conexão → seletor (Avançar só com seleção) → formulário → testar → conectar → workspace com o título da conexão → linha na sidebar. **Pendentes para o portão (W1-T25):** só teclado (setas/Enter), snapshots da tela, formulário PostgreSQL pela UI, VoiceOver |
 | W1-T03 Driver SQLite (NST-04-02) | Concluída | `RSKeeperDriverSQLiteTests`: **12/12** verificações de conformidade (nenhuma pulada); NT-DRV-12 (journal e sidecars); WAL sem sidecars em somente leitura; isolamento entre conexões; tipos; redação |
 
 ## Decisões
@@ -47,6 +48,11 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 | W1-D16 | ⌘W/⌘T (abas) só entram na W1-T20; F5/⇧F5 ficam com o editor (W1-T21) via `performKeyEquivalent` | Ligar ⌘W antes da barra de abas roubaria o "Fechar janela"; o SwiftUI só aceita um atalho por item de menu |
 | W1-D17 | CI enfileira runs (`cancel-in-progress: false`) | Com um runner, cancelar deixava commits enviados sem validação |
 
+| W1-D18 | Fachada `ConnectionsService` e tipos da sidebar no Domain | As telas (`Features`) só importam Application/DesignSystem/Domain; nada de persistência, Keychain ou drivers na UI |
+| W1-D19 | Acesso de escopo de longa duração (`ScopedAccessTracker`) para o arquivo SQLite da sessão | O `withAccess` da Onda 0 fecha o escopo ao fim do closure; a conexão precisa do arquivo aberto. O escopo fica aberto até o fim do processo (fechar ao encerrar a sessão é pendência) |
+| W1-D20 | Gancho só Dev/Test "Usar arquivo de banco de amostra" (menu Debug) | O painel de arquivos do sistema não é automatizável no XCUITest; o arquivo entra pela mesma concessão por bookmark |
+| W1-D21 | Gate de avisos conta só diagnósticos de compilação em fonte própria (`arquivo:linha: warning:`, macros, linker) | Avisos de ferramenta (cache do SwiftPM com acesso concorrente, avisos internos do runner do XCTest) davam falso positivo; os casos reais seguem cobertos e o check negativo confirma |
+
 ## Achados
 
 - O CI no runner próprio, com árvore limpa, encontrou 4 avisos em `ComponentTests` que o build incremental escondia (corrigido; registrado em wave-0-exit.md).
@@ -57,3 +63,4 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 - **Primeiro run completo do CI no GitHub (runner próprio): 16/16 verde** (run 38483217094).
 - **Gate mascarado (erro meu):** no commit da W1-T04 rodei `check-boundaries.sh | tail -1`; o pipe escondeu a linha de violação (regra do driver PostgreSQL sem `RSKeeperSQLKit`) e trocou o código de saída pelo do `tail`. O commit dizia "fronteiras OK" sem a verificação ter passado. O CI no GitHub reprovou (run 38486274021); regra corrigida. Desde então os gates rodam sem pipe e com o código de saída conferido.
 - **Job de drivers no GitHub:** passou na primeira execução (PostgreSQL 14/16/17 no Docker do runner próprio).
+- **Gate de avisos com falso positivo:** o run 38488696979 reprovou por um aviso de cache do SwiftPM (meus testes locais e o runner usaram o cache ao mesmo tempo). Gate refinado (W1-D21); o `pipefail` da primeira versão do refinamento também foi pego antes do commit.

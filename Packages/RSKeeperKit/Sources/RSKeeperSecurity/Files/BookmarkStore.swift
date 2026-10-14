@@ -79,6 +79,53 @@ public struct BookmarkStore: Sendable {
         return try await body(url)
     }
 
+    /// Acesso de longa duração (uma sessão SQLite mantém o arquivo aberto): resolve o bookmark, inicia o
+    /// escopo e devolve a URL. O escopo fica aberto até `endLongLivedAccess` ou o fim do processo.
+    public func beginLongLivedAccess(to grant: FileGrant, tracker: ScopedAccessTracker) async throws -> URL {
+        guard let data = try await storage.load(grant.id) else { throw FileGrantError.unknownGrant }
+        var stale = false
+        let url: URL
+        do {
+            url = try URL(resolvingBookmarkData: data, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &stale)
+        } catch {
+            throw FileGrantError.staleOrInvalid
+        }
+        guard !stale else { throw FileGrantError.staleOrInvalid }
+        guard !appDataRoot.contains(url) else { throw FileGrantError.insideAppDataRoot }
+        await tracker.begin(grant.id, url: url, access: access)
+        return url
+    }
+
+    public func endLongLivedAccess(to grant: FileGrant, tracker: ScopedAccessTracker) async {
+        await tracker.end(grant.id, access: access)
+    }
+
     /// Revoga a concessão (o arquivo em si não é tocado).
     public func revoke(_ grant: FileGrant) async throws { try await storage.remove(grant.id) }
+}
+
+/// Escopos de acesso abertos por concessão, com contagem (duas sessões no mesmo arquivo).
+public actor ScopedAccessTracker {
+    private var open: [UUID: (url: URL, count: Int, started: Bool)] = [:]
+    public init() {}
+
+    func begin(_ id: UUID, url: URL, access: any SecurityScopedAccessing) {
+        if let entry = open[id] {
+            open[id] = (entry.url, entry.count + 1, entry.started)
+        } else {
+            open[id] = (url, 1, access.startAccessing(url))
+        }
+    }
+
+    func end(_ id: UUID, access: any SecurityScopedAccessing) {
+        guard let entry = open[id] else { return }
+        if entry.count > 1 {
+            open[id] = (entry.url, entry.count - 1, entry.started)
+        } else {
+            open[id] = nil
+            if entry.started { access.stopAccessing(entry.url) }
+        }
+    }
+
+    public var openCount: Int { open.count }
 }

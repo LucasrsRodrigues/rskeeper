@@ -14,6 +14,9 @@ struct BaseCommands: Commands {
             Button("Component Gallery") {
                 openWindow(id: SceneID.gallery)
             }
+            Button("Use Sample Database File") {
+                NotificationCenter.default.post(name: SampleDatabase.notification, object: nil)
+            }
         }
         #endif
     }
