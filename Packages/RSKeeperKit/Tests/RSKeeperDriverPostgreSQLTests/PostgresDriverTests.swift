@@ -223,3 +223,29 @@ struct PostgresDriverTests {
         #expect(catalog.contains { $0.ref.name == "now" && $0.kind == .routine })
     }
 }
+
+@Suite("Driver PostgreSQL — servidor derruba a conexão (W1-T10, NT-INT)", .enabled(if: PGTestEnvironment.available))
+struct PostgresConnectionLossTests {
+    @Test("pg_terminate_backend: a próxima consulta falha como .connection, sem travar (R-NDRV-08)", arguments: PGTestEnvironment.ports)
+    func serverTerminatesConnection(port: Int) async throws {
+        let victim = try await PGTestEnvironment.open(port)
+        let admin = try await PGTestEnvironment.open(port)
+        defer { Task { await admin.close(); await victim.close() } }
+        guard case .rows(_, let batch, _, _) = try await victim.execute(BoundStatement(sql: "SELECT pg_backend_pid()::int8"), limits: .default),
+              case .int(let pid) = batch.columns[0][0] else { Issue.record("sem pid"); return }
+        _ = try await admin.execute(BoundStatement(sql: "SELECT pg_terminate_backend($1::int4)", bindings: [.int(pid)]), limits: .default)
+        try await Task.sleep(for: .milliseconds(300))
+        let clock = ContinuousClock()
+        let start = clock.now
+        do {
+            _ = try await victim.execute(BoundStatement(sql: "SELECT 1"), limits: .default)
+            Issue.record("consulta numa conexão derrubada não falhou")
+        } catch {
+            switch error {
+            case .connection: break
+            default: Issue.record("esperado .connection, veio \(error)")
+            }
+        }
+        #expect(clock.now - start < .seconds(5), "a falha precisa ser rápida (R-NDRV-08)")
+    }
+}

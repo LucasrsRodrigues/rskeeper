@@ -14,6 +14,7 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 | W1-T07 Executar e cancelar (NST-07-02) | Concluída | `ExecuteQueryTests` (6, com SQLite real): NT-DRV-09 (falha na 2ª de 3), BEGIN…COMMIT/ROLLBACK e ROLLBACK TO, Auto desfaz BEGIN aberto com aviso, DR-06, busy na mesma aba, cancelamento ≤ 1 s pela sessão; plano (atual, seleção, parâmetros, somente leitura, COPY) |
 | W1-T08 Confirmação de risco (NST-07-04, ampliada) | Concluída | `PolicyTests`: matriz DR-11 (18 casos), ambientes não produtivos, contornos por comentário/caixa/CTE; token na sessão com SQLite real: sem token recusa, uso único, outra aba, outro digest (instrução e parâmetro), expiração, nome digitado em produção, somente leitura |
 | W1-T09 ResultStore (NST-07-03, núcleo) | Concluída | `ResultStoreTests` (6): páginas por linhas e bytes, LRU só em abas inativas (`.evicted`), TTL (`.expired`) com relógio manual, liberação por nova execução e fechamento, orçamento do processo reduz `maxBytes`, 50.000 × 50 em < 2 s |
+| W1-T10 Recuperação de falhas e autosave (NST-01-05) | Concluída | `RecoveryTests` (4): debounce/flush/aba fechada; boot depois de encerramento forçado restaura abas e texto não salvo; conexão perdida → evento, recusa até reconectar, escrita não repetida; transação manual nunca "ativa" após queda. PG real: `pg_terminate_backend` → `.connection` em 0,4 s (R-NDRV-08) |
 | W1-T03 Driver SQLite (NST-04-02) | Concluída | `RSKeeperDriverSQLiteTests`: **12/12** verificações de conformidade (nenhuma pulada); NT-DRV-12 (journal e sidecars); WAL sem sidecars em somente leitura; isolamento entre conexões; tipos; redação |
 
 ## Decisões
@@ -39,6 +40,8 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 | W1-D13 | `PlaceholderStyle` do SQLKit renomeado para `SQLPlaceholderStyle` | Os enums marcadores com o nome do módulo impedem qualificar `Módulo.Tipo`; os dois tipos eram nossos |
 
 | W1-D14 | `SessionRegistry.open` exige `policy:`; a política é reaplicada em `executeScript` | Nenhum chamador pode esquecer o ambiente de produção; contornar a UI não basta. `execute` (instrução única) fica para leituras internas (páginas, metadados) e não passa pela política — risco registrado |
+
+| W1-D15 | Autosave grava também o registro mínimo da aba (`tab`) junto com o rascunho | `draft.tab_id` referencia `tab`, e o critério 2 pede restaurar as abas, não só o texto; `TabKind` mínimo no Domain (consulta, tabela) |
 
 ## Achados
 

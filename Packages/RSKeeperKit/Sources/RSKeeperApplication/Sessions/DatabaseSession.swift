@@ -35,12 +35,18 @@ public actor DatabaseSession {
     private var finishedOrder: [ExecutionID] = []
     private let finishedCapacity: Int
     private var closed = false
+    /// NST-01-05: depois de perder a conexão, nada executa até `reconnect()`.
+    public private(set) var isLost = false
+    /// Eventos da sessão para a UI (banner "Conexão perdida", fim de transação).
+    public nonisolated let events: AsyncStream<SessionEvent>
+    private let eventSink: AsyncStream<SessionEvent>.Continuation
 
     init(id: SessionID, window: WindowID, profileID: ProfileID, factory: any DriverFactory,
          target: ResolvedTarget, options: OpenOptions, maxConnections: Int, finishedCapacity: Int,
          policy: OperationPolicyContext, confirmationLifetime: Duration) {
         self.policy = policy
         self.confirmationLifetime = confirmationLifetime
+        (self.events, self.eventSink) = AsyncStream.makeStream(of: SessionEvent.self, bufferingPolicy: .bufferingNewest(16))
         self.id = id
         self.window = window
         self.profileID = profileID
@@ -129,6 +135,7 @@ public actor DatabaseSession {
         if let previous = finishedScripts[executionID] { return previous }
         guard running[executionID] == nil else { throw .conflict(.duplicateID) }
         guard !statements.isEmpty else { throw .validation(RedactedMessage(alreadyRedacted: "Nenhuma instrução para executar.")) }
+        guard !isLost else { throw .connection(RedactedMessage(alreadyRedacted: "Conexão perdida. Reconecte para continuar.")) }
         guard !busyTabs.contains(tab) else { throw .conflict(.busy) }               // DR-20
         // NST-07-04: a política vale mesmo que a UI seja contornada.
         switch policyEngine.evaluate(statements.map(\.risk), context: policy) {
@@ -216,12 +223,40 @@ public actor DatabaseSession {
         }
         if manual {
             _ = consume lease
+            if lostConnection { await markLost(manualTab: tab) }
         } else {
             await release(lease, discard: cancelled || lostConnection)
+            if lostConnection { await markLost(manualTab: nil) }
         }
         let result = ScriptOutcome(reports: reports, outcomes: outcomes, autoRolledBackTransaction: rolledBack)
         rememberScript(executionID, result)
         return result
+    }
+
+    // MARK: Perda de conexão e reconexão (NST-01-05)
+
+    /// A conexão caiu: a transação manual da aba (se houver) é dada como desfeita pelo servidor, nunca
+    /// como ativa; as conexões ociosas são descartadas (podem estar mortas também).
+    private func markLost(manualTab: TabID?) async {
+        if let manualTab, let connection = manualTransactions.removeValue(forKey: manualTab) {
+            await destroy(connection)
+            eventSink.yield(.transactionEnded(tab: manualTab, outcome: .presumedRolledBackByServer))
+        }
+        for connection in idle { await destroy(connection) }
+        idle.removeAll()
+        guard !isLost else { return }
+        isLost = true
+        eventSink.yield(.lost(RedactedMessage(alreadyRedacted: "A conexão com o banco foi perdida.")))
+    }
+
+    /// Reabre uma conexão. **Não** repete nenhuma operação (critério 4): o usuário executa de novo se quiser.
+    public func reconnect() async throws(RSKeeperError) {
+        guard !closed else { throw .notFound(.unknown) }
+        guard isLost else { return }
+        let connection = try await openConnection()
+        idle.append(connection)
+        isLost = false
+        eventSink.yield(.reconnected)
     }
 
     // MARK: Confirmação de risco (NST-07-04; DR-14)
@@ -351,6 +386,7 @@ public actor DatabaseSession {
     public func close() async {
         guard !closed else { return }
         closed = true
+        defer { eventSink.finish() }
         for (executionID, entry) in running { await entry.connection.cancelHandle(for: executionID)?.cancel() }
         await waitForRunningToFinish(timeout: .seconds(5))
         for (_, connection) in manualTransactions {
@@ -367,6 +403,8 @@ public actor DatabaseSession {
     }
 
     public var isClosed: Bool { closed }
+
+    deinit { eventSink.finish() }
 
     /// Espera as execuções canceladas terminarem antes do rollback (ordem do NT-CONC-04).
     /// O actor é reentrante: enquanto esta função aguarda, `execute` retoma e remove a entrada.

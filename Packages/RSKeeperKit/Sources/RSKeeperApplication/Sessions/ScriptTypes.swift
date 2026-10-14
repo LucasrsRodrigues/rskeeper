@@ -25,3 +25,17 @@ public struct ScriptOutcome: Sendable {
 
     public var succeeded: Bool { reports.allSatisfy { $0.status == .ok } }
 }
+
+/// Eventos da sessão (NST-01-05).
+public enum SessionEvent: Sendable, Hashable {
+    /// A conexão caiu: banner com "Reconectar" e "Ficar desconectado".
+    case lost(RedactedMessage)
+    case reconnected
+    /// Transação manual encerrada fora do controle do usuário.
+    case transactionEnded(tab: TabID, outcome: TransactionEndOutcome)
+}
+
+public enum TransactionEndOutcome: String, Sendable, Hashable {
+    /// A conexão caiu: o servidor desfaz a transação aberta (presumido; a UI diz "desfeita pelo servidor").
+    case presumedRolledBackByServer
+}
