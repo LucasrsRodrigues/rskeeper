@@ -81,5 +81,7 @@ struct WorkspaceSplit<Sidebar: View, Content: View, Inspector: View>: NSViewCont
         return controller
     }
 
-    func updateNSViewController(_ controller: WorkspaceSplitController, context: Context) {}
+    func updateNSViewController(_ controller: WorkspaceSplitController, context: Context) {
+        controller.update(sidebar: sidebar, content: content, inspector: inspector)
+    }
 }

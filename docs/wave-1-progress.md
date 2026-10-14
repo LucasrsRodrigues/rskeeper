@@ -18,6 +18,7 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 | W1-T11 Comandos e menus (NST-13-01) | Concluída | `CommandRegistryTests` (4): unicidade de IDs e atalhos, atalhos do doc 10 §6.2, habilitação por estado, contexto da janela; XCUITest: sem conexão, "Executar tudo", "Cancelar execução" e "Desconectar" desabilitados, "Nova conexão…" habilitado |
 | W1-T12…T16 Tela de conexões, seletor de driver, formulários SQLite e servidor, importar URL, testar e conectar (NST-03-01…05) | Implementadas; verificação parcial | `ConnectionsServiceTests` (4, SQLite real): arquivo → bookmark persistente → testar → conectar → recentes; arquivo da raiz do app recusado; URL sem expor senha; senha no Keychain (.test) ou só uso único. XCUITest: nova conexão → seletor (Avançar só com seleção) → formulário → testar → conectar → workspace com o título da conexão → linha na sidebar. **Pendentes para o portão (W1-T25):** só teclado (setas/Enter), snapshots da tela, formulário PostgreSQL pela UI, VoiceOver |
 | W1-T17 Shell de quatro regiões (NST-05-01) | Concluída (parcial em a11y/snapshot) | `WorkspaceLayoutTests` (3): regras de janela estreita, limites do SPK-N08, autosave por janela. XCUITest: trilho, sidebar visível, inspetor fechado no início, Visualizar → mostrar/ocultar inspetor e sidebar. **Pendentes:** ciclo F6 verificado por teste, snapshots por largura, VoiceOver |
+| W1-T18 Explorador (NST-05-02) | Concluída (VoiceOver manual pendente) | `ExplorerServiceTests` (2, SQLite real): database atual, schemas, entidades por tipo, colunas com PK, cache e atualizar; **10.000 tabelas** listadas < 2 s e filtradas < 100 ms. `ExplorerOutlineTests`: expandir carrega colunas. XCUITest só com teclado: tabela visível, filtro esconde/mostra, type-select + → mostram as colunas |
 | W1-T03 Driver SQLite (NST-04-02) | Concluída | `RSKeeperDriverSQLiteTests`: **12/12** verificações de conformidade (nenhuma pulada); NT-DRV-12 (journal e sidecars); WAL sem sidecars em somente leitura; isolamento entre conexões; tipos; redação |
 
 ## Decisões
@@ -57,6 +58,9 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 | W1-D22 | Regras de janela estreita só durante o redimensionamento ao vivo | Na montagem, a janela passa por larguras provisórias e a regra recolhia a sidebar por engano (achado do XCUITest) |
 | W1-D23 | XCUITests com `-ApplePersistenceIgnoreState YES` | A restauração do macOS reabria janelas de execuções anteriores |
 
+| W1-D24 | Sessão com conexão dedicada a metadados (somente leitura) e `ExplorerService` com itens simples | SPK-N05; as telas não importam `DriversCore` |
+| W1-D25 | Carga sob demanda no `shouldExpandItem` (recusa, carrega, expande de novo); cargas parciais não reconstroem a árvore | A carga por notificação não expandia; reconstruir recolhia o item recém-expandido |
+
 ## Achados
 
 - O CI no runner próprio, com árvore limpa, encontrou 4 avisos em `ComponentTests` que o build incremental escondia (corrigido; registrado em wave-0-exit.md).
@@ -68,3 +72,4 @@ Plano: [wave-1-plan.md](wave-1-plan.md). Toolchain: Xcode 27.0, Swift 6.4. CI: r
 - **Gate mascarado (erro meu):** no commit da W1-T04 rodei `check-boundaries.sh | tail -1`; o pipe escondeu a linha de violação (regra do driver PostgreSQL sem `RSKeeperSQLKit`) e trocou o código de saída pelo do `tail`. O commit dizia "fronteiras OK" sem a verificação ter passado. O CI no GitHub reprovou (run 38486274021); regra corrigida. Desde então os gates rodam sem pipe e com o código de saída conferido.
 - **Job de drivers no GitHub:** passou na primeira execução (PostgreSQL 14/16/17 no Docker do runner próprio).
 - **Gate de avisos com falso positivo:** o run 38488696979 reprovou por um aviso de cache do SwiftPM (meus testes locais e o runner usaram o cache ao mesmo tempo). Gate refinado (W1-D21); o `pipefail` da primeira versão do refinamento também foi pego antes do commit.
+- **Painéis do shell congelados:** o `WorkspaceSplit` não repassava as views novas aos `NSHostingController`; a sidebar ficava presa ao conteúdo de quando a janela abriu. Corrigido (`update(sidebar:content:inspector:)`).

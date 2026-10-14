@@ -26,6 +26,8 @@ public actor DatabaseSession {
     private var confirmations: [ConfirmationToken: IssuedConfirmation] = [:]
 
     private var idle: [any PhysicalConnection] = []
+    /// Conexão dedicada a metadados, somente leitura (SPK-N05): nunca é a de uma aba nem de transação.
+    private var metadataConnection: (any PhysicalConnection)?
     private var openCount = 0
     private var busyTabs: Set<TabID> = []
     private var manualTransactions: [TabID: any PhysicalConnection] = [:]
@@ -233,6 +235,44 @@ public actor DatabaseSession {
         return result
     }
 
+    // MARK: Metadados (NST-05-02)
+
+    /// Acesso aos metadados pela conexão dedicada (aberta sob demanda, dentro do orçamento DR-19).
+    /// Leituras idempotentes: uma falha transitória de conexão reabre e repete **uma** vez (03 §12.2).
+    public func withMetadata<T: Sendable>(_ body: @Sendable (any MetadataProvider) async throws(DriverError) -> T) async throws(RSKeeperError) -> T {
+        guard !closed else { throw .notFound(.unknown) }
+        guard !isLost else { throw .connection(RedactedMessage(alreadyRedacted: "Conexão perdida. Reconecte para continuar.")) }
+        for attempt in 0..<2 {
+            let connection: any PhysicalConnection
+            if let existing = metadataConnection {
+                connection = existing
+            } else {
+                guard openCount < maxConnections else { throw .conflict(.connectionLimit) }
+                openCount += 1
+                do {
+                    var readOnly = options
+                    readOnly.readOnly = true
+                    connection = try await factory.open(target, options: readOnly)
+                } catch {
+                    openCount -= 1
+                    throw error.applicationError
+                }
+                metadataConnection = connection
+            }
+            do {
+                return try await body(connection)
+            } catch {
+                if case .connection = error, attempt == 0 {
+                    metadataConnection = nil
+                    await destroy(connection)
+                    continue
+                }
+                throw error.applicationError
+            }
+        }
+        throw .connection(RedactedMessage(alreadyRedacted: "Metadados indisponíveis."))
+    }
+
     // MARK: Perda de conexão e reconexão (NST-01-05)
 
     /// A conexão caiu: a transação manual da aba (se houver) é dada como desfeita pelo servidor, nunca
@@ -392,7 +432,8 @@ public actor DatabaseSession {
         for (_, connection) in manualTransactions {
             try? await connection.resetSession()                                    // rollback (DR-17)
         }
-        let all = idle + Array(manualTransactions.values) + running.values.map(\.connection)
+        let all = idle + Array(manualTransactions.values) + running.values.map(\.connection) + (metadataConnection.map { [$0] } ?? [])
+        metadataConnection = nil
         manualTransactions.removeAll()
         idle.removeAll()
         var seen: Set<ObjectIdentifier> = []

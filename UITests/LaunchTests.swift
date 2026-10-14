@@ -51,6 +51,52 @@ final class LaunchTests: XCTestCase {
         app.terminate()
     }
 
+    /// Cria e conecta a conexão de amostra (SQLite) e devolve a janela de workspace.
+    @discardableResult
+    private func connectSample(_ app: XCUIApplication, name: String) -> XCUIElement {
+        XCTAssertTrue(app.buttons["rk.connections.new"].waitForExistence(timeout: 10))
+        app.buttons["rk.connections.new"].click()
+        let sqlite = app.descendants(matching: .any)["rk.driverPicker.item.sqlite"].firstMatch
+        XCTAssertTrue(sqlite.waitForExistence(timeout: 5))
+        sqlite.click()
+        app.buttons["rk.driverPicker.next"].click()
+        app.menuBars.menuBarItems["Debug"].click()
+        app.menuItems["Use Sample Database File"].click()
+        let field = app.textFields["rk.connections.form.name"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10))
+        field.click()
+        field.typeKey("a", modifierFlags: .command)
+        field.typeText(name)
+        app.buttons["rk.connections.form.connect"].click()
+        let window = app.windows[name]
+        XCTAssertTrue(window.waitForExistence(timeout: 10))
+        return window
+    }
+
+    /// NST-05-02: explorador com a tabela de amostra; filtro; colunas ao expandir.
+    func testExplorerShowsSampleTable() {
+        let app = launch(language: "en")
+        let window = connectSample(app, name: "Explorer UI")
+        let tree = window.outlines.firstMatch
+        let entity = tree.cells["pedidos"].firstMatch
+        XCTAssertTrue(entity.waitForExistence(timeout: 10))
+        let filter = window.textFields.matching(NSPredicate(format: "placeholderValue == 'Filter entities'")).firstMatch
+        XCTAssertTrue(filter.waitForExistence(timeout: 5))
+        filter.click()
+        filter.typeText("zzz")
+        let gone = expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: entity)
+        wait(for: [gone], timeout: 5)
+        filter.typeKey("a", modifierFlags: .command)
+        filter.typeText("ped")
+        XCTAssertTrue(entity.waitForExistence(timeout: 5))
+        // Teclado (crit. 5): foco na árvore, type-select seleciona a tabela, → expande e mostra as colunas.
+        tree.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.02)).click()
+        window.typeText("pedidos")
+        window.typeKey(.rightArrow, modifierFlags: [])
+        XCTAssertTrue(tree.cells.matching(NSPredicate(format: "label BEGINSWITH 'cliente'")).firstMatch.waitForExistence(timeout: 5))
+        app.terminate()
+    }
+
     /// NST-03-01…05: nova conexão → seletor de driver → formulário SQLite → testar → conectar → workspace
     /// com o título da conexão; a conexão aparece em "Recentes".
     func testCreateTestAndConnectSQLite() {

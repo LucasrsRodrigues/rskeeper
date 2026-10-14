@@ -13,6 +13,9 @@ public enum WorkspaceRegion: Int, CaseIterable, Sendable { case sidebar, content
 ///   layout causa recursão; medido no SPK-N08).
 @MainActor
 public final class WorkspaceSplitController: NSSplitViewController {
+    private let sidebarHost: NSHostingController<AnyView>
+    private let contentHost: NSHostingController<AnyView>
+    private let inspectorHost: NSHostingController<AnyView>
     private let sidebarItem: NSSplitViewItem
     private let contentItem: NSSplitViewItem
     private let inspectorItem: NSSplitViewItem
@@ -26,18 +29,21 @@ public final class WorkspaceSplitController: NSSplitViewController {
             controller.sizingOptions = []
             return controller
         }
-        sidebarItem = NSSplitViewItem(sidebarWithViewController: host(sidebar))
+        sidebarHost = host(sidebar)
+        contentHost = host(content)
+        inspectorHost = host(inspector)
+        sidebarItem = NSSplitViewItem(sidebarWithViewController: sidebarHost)
         sidebarItem.minimumThickness = WorkspaceLayout.sidebar.min
         sidebarItem.maximumThickness = WorkspaceLayout.sidebar.max
         sidebarItem.canCollapse = true
         sidebarItem.canCollapseFromWindowResize = true
         sidebarItem.holdingPriority = NSLayoutConstraint.Priority(260)
 
-        contentItem = NSSplitViewItem(viewController: host(content))
+        contentItem = NSSplitViewItem(viewController: contentHost)
         contentItem.minimumThickness = WorkspaceLayout.contentMin
         contentItem.holdingPriority = NSLayoutConstraint.Priority(250)
 
-        inspectorItem = NSSplitViewItem(inspectorWithViewController: host(inspector))
+        inspectorItem = NSSplitViewItem(inspectorWithViewController: inspectorHost)
         inspectorItem.minimumThickness = WorkspaceLayout.inspector.min
         inspectorItem.maximumThickness = WorkspaceLayout.inspector.max
         inspectorItem.canCollapse = true
@@ -54,6 +60,14 @@ public final class WorkspaceSplitController: NSSplitViewController {
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) não é usado") }
+
+    /// O SwiftUI recria as views dos painéis a cada atualização; os hosts precisam receber as novas
+    /// (senão a sidebar ficaria presa ao conteúdo de quando a janela abriu).
+    func update(sidebar: some View, content: some View, inspector: some View) {
+        sidebarHost.rootView = AnyView(sidebar)
+        contentHost.rootView = AnyView(content)
+        inspectorHost.rootView = AnyView(inspector)
+    }
 
     public var isSidebarVisible: Bool { !sidebarItem.isCollapsed }
     public var isInspectorVisible: Bool { !inspectorItem.isCollapsed }

@@ -15,8 +15,12 @@ struct WorkspaceWindowView: View {
         Group {
             if let model {
                 WorkspaceShell(model: model) {
-                    RKEmptyState(String(localized: "Explorer"), systemImage: "cylinder.split.1x2")
-                        .accessibilityIdentifier("rk.workspace.sidebar")
+                    if let explorer = model.explorer {
+                        ExplorerView(model: explorer)
+                    } else {
+                        RKEmptyState(String(localized: "Explorer"), systemImage: "cylinder.split.1x2")
+                            .accessibilityIdentifier("rk.workspace.sidebar")
+                    }
                 } content: {
                     RKEmptyState(model.title, message: model.session == nil ? String(localized: "Not connected") : nil,
                                  systemImage: "rectangle.split.3x1")

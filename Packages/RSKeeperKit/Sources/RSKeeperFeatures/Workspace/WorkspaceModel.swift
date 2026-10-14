@@ -11,7 +11,12 @@ public final class WorkspaceModel {
 
     public let windowID: WindowID
     public let title: String
-    public private(set) var session: DatabaseSession?
+    public private(set) var session: DatabaseSession? {
+        didSet { explorer = session.map { session in ExplorerModel(service: ExplorerService(session: session)) { [weak self] in self?.requestOpen($0) } } }
+    }
+    public private(set) var explorer: ExplorerModel?
+    /// Última entidade pedida pelo explorador (a aba de tabela da W1-T24 atende).
+    public private(set) var openRequest: ExplorerEntity?
     public var railDestination: RailDestination = .explorer
     public private(set) var sidebarVisible = true
     public private(set) var inspectorVisible = false
@@ -44,6 +49,8 @@ public final class WorkspaceModel {
             if decision.inspectorAutoClosed { self?.notice = String(localized: "Inspector closed: not enough space") }
         }
     }
+
+    func requestOpen(_ entity: ExplorerEntity) { openRequest = entity }
 
     public func toggleSidebar() { split?.setSidebar(visible: !(split?.isSidebarVisible ?? true)) }
     public func toggleInspector() {

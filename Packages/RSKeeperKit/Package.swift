@@ -197,7 +197,7 @@ let package = Package(
         ),
         .testTarget(
             name: "RSKeeperFeaturesTests",
-            dependencies: ["RSKeeperFeatures"]
+            dependencies: ["RSKeeperFeatures", "RSKeeperDriverSQLite"]
         ),
         // Testes de arquitetura (fronteiras de módulo, regras de migração). Leem arquivos
         // do repositório; não dependem de nenhum módulo de produção.

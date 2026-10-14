@@ -257,6 +257,22 @@
         }
       }
     },
+    "Copy Name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy Name"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copiar nome"
+          }
+        }
+      }
+    },
     "Could not reach the server: %@": {
       "localizations": {
         "en": {
@@ -401,6 +417,22 @@
         }
       }
     },
+    "ENTITIES": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ENTITIES"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ENTIDADES"
+          }
+        }
+      }
+    },
     "Empty workspace": {
       "localizations": {
         "en": {
@@ -413,6 +445,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Workspace vazio"
+          }
+        }
+      }
+    },
+    "Entities": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entities"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entidades"
           }
         }
       }
@@ -461,6 +509,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Filtrar conexões"
+          }
+        }
+      }
+    },
+    "Filter entities": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter entities"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtrar entidades"
           }
         }
       }
@@ -813,6 +877,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Desconectado"
+          }
+        }
+      }
+    },
+    "Open": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir"
           }
         }
       }
